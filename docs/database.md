@@ -6,7 +6,7 @@ except the Django built-ins (`auth_user`, `django_session`, …).
 Two rules govern the whole schema:
 
 - **Nothing is ever deleted.** Every foreign key that points at real work is
-  `ON DELETE PROTECT`. There are no delete views and admin delete is off for
+  `ON DELETE PROTECT`. There are no delete views, and retiring is always `is_active = False` for
   Design, Version and Comment. Retiring something is a boolean, not a `DELETE`.
 - **Postgres stores keys, never image bytes.** Images live in Cloudflare R2
   (MinIO locally). See [Storage](#storage-keys) below.
@@ -43,7 +43,7 @@ Three groups:
 
 | Group | Tables | Who edits them |
 |---|---|---|
-| **Reference data** | `season`, `category`, `status`, `allowedtransition`, `specfield`, `specoption`, `guidancecard`, `guidancestep` | The team, in django-admin. Seeded by migrations `0002` and `0004`. |
+| **Reference data** | `season`, `category`, `status`, `allowedtransition`, `specfield`, `specoption`, `guidancecard`, `guidancestep` | The team, under Settings in the app. Seeded by migrations `0002` and `0004`. |
 | **The work** | `design`, `version`, `comment`, `designspec`, `measurement`, `statustransition` | The application, only through `designs/services.py`. |
 | **History** | `historicaldesign`, `historicalversion`, `historicalcomment`, `historicalmeasurement`, `historicaldesignspec` | `django-simple-history`, automatically. Never written by hand. |
 
@@ -68,7 +68,7 @@ Same shape as Season: `code` (unique), `label`, `is_active`.
 
 ### `designs_status`
 A workflow stage. **Spec §9 is still open**, so the seeded names are placeholders
-and the team may rename them in admin at any time. Nothing in the application
+and the team may rename them under Settings → Workflow at any time. Nothing in the application
 branches on a status *name* — behaviour keys off the three booleans.
 
 | Column | Type | Notes |
@@ -197,7 +197,7 @@ successive edits from the original — degradation accumulates with depth, which
 is the reason to re-branch), and `display_label`.
 
 > **Numbering vs labelling.** `number` is 1-based in the database and stays that
-> way in the admin, the audit trail and every historical row. The UI calls the
+> way in the audit trail and every historical row. The UI calls the
 > reference `REF` and later versions `v1`, `v2` … via `Version.display_label`.
 > Use `display_label` in templates, `number` in URLs.
 
@@ -211,7 +211,7 @@ keep their history.
 
 ### `designs_designspec`
 One field of one design's specification. A row per value rather than columns on
-Design, so adding an attribute is an admin action and not a migration.
+Design, so adding an attribute is a Settings action and not a migration.
 
 `design_id` → Design (PROTECT), `field_id` → SpecField (PROTECT),
 `option_id` → SpecOption (PROTECT). Constraint: `one_value_per_field_per_design`.
@@ -260,7 +260,7 @@ for anything that came through a request, and set explicitly by
 `DO_NOTHING` by design — a historical row must survive whatever happened to the
 rows it points at.
 
-Read them in admin at `/admin/designs/design/<id>/history/`.
+They are read with the ORM (`design.history.all()`); there is no screen for them.
 
 ---
 
@@ -290,7 +290,7 @@ expires (600 s by default). An unsigned or expired URL returns 403.
 | `0004_seed_spec_fields` | 15 spec fields, 118 options, with colour hexes. Reversible. |
 
 The seeds are a starting point, not a decision. Everything they insert is
-editable in django-admin without a migration or a code change.
+editable under Settings without a migration or a code change.
 
 ---
 

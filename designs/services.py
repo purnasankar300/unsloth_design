@@ -325,3 +325,354 @@ def activity(design):
 
     events.sort(key=lambda event: event["when"])
     return events
+
+
+# --------------------------------------------------------------------------
+# Configuration. There is no django-admin: every one of these is reachable
+# from the settings screens, and spec §3 means any signed-in user may use them.
+# Retiring is always ``is_active = False`` — nothing here is ever destroyed.
+# --------------------------------------------------------------------------
+
+
+def _unique_slug(model, label, *, field="code"):
+    """A slug from a label, suffixed until it is free."""
+    from django.utils.text import slugify
+
+    base = slugify(label)[:40] or "item"
+    candidate, n = base, 2
+    while model.objects.filter(**{field: candidate}).exists():
+        suffix = f"-{n}"
+        candidate = base[: 40 - len(suffix)] + suffix
+        n += 1
+    return candidate
+
+
+def _next_order(queryset):
+    last = queryset.order_by("-order").first()
+    return (last.order + 10) if last else 10
+
+
+@transaction.atomic
+def add_drop(*, code, label, actor):
+    """A selling season. Its code becomes the first segment of a design code.
+
+    The code is typed rather than derived: it is structural, it appears in every
+    design code forever, and no label reliably shortens to `SS26`.
+    """
+    from .models import Season
+
+    code = (code or "").strip().upper()
+    label = (label or "").strip() or code
+    if not code:
+        raise ValidationError("A drop needs a code.")
+    if Season.objects.filter(code=code).exists():
+        raise ValidationError(f"{code} already exists.")
+
+    drop = Season(code=code, label=label)
+    drop.full_clean()
+    drop.save()
+    return drop
+
+
+@transaction.atomic
+def update_drop(*, drop, label, actor):
+    """Rename a drop. The code is never touched — design codes carry it."""
+    drop.label = (label or "").strip() or drop.code
+    drop.save(update_fields=["label"])
+    return drop
+
+
+@transaction.atomic
+def retire_drop(*, drop, actor):
+    """Stop offering a drop. Designs already filed under it keep it."""
+    if drop.is_active:
+        drop.is_active = False
+        drop.save(update_fields=["is_active"])
+    return drop
+
+
+@transaction.atomic
+def restore_drop(*, drop, actor):
+    if not drop.is_active:
+        drop.is_active = True
+        drop.save(update_fields=["is_active"])
+    return drop
+
+
+@transaction.atomic
+def add_category(*, code, label, actor):
+    """A garment category. Its code is the second segment of a design code."""
+    from .models import Category
+
+    code = (code or "").strip().upper()
+    label = (label or "").strip() or code
+    if not code:
+        raise ValidationError("A category needs a code.")
+    if Category.objects.filter(code=code).exists():
+        raise ValidationError(f"{code} already exists.")
+
+    category = Category(code=code, label=label)
+    category.full_clean()
+    category.save()
+    return category
+
+
+@transaction.atomic
+def update_category(*, category, label, actor):
+    category.label = (label or "").strip() or category.code
+    category.save(update_fields=["label"])
+    return category
+
+
+@transaction.atomic
+def retire_category(*, category, actor):
+    if category.is_active:
+        category.is_active = False
+        category.save(update_fields=["is_active"])
+    return category
+
+
+@transaction.atomic
+def restore_category(*, category, actor):
+    if not category.is_active:
+        category.is_active = True
+        category.save(update_fields=["is_active"])
+    return category
+
+
+@transaction.atomic
+def add_spec_field(*, label, show_on_card, actor):
+    """Add an attribute a garment is described by.
+
+    The code is slugified from the label and then frozen: designs reference the
+    field by row, but the code is what the URLs and the option lists key off.
+    """
+    from .models import SpecField
+
+    label = (label or "").strip()
+    if not label:
+        raise ValidationError("A field needs a name.")
+    if SpecField.objects.filter(label__iexact=label).exists():
+        raise ValidationError(f"{label} already exists.")
+
+    return SpecField.objects.create(
+        code=_unique_slug(SpecField, label),
+        label=label,
+        show_on_card=bool(show_on_card),
+        order=_next_order(SpecField.objects),
+    )
+
+
+@transaction.atomic
+def update_spec_field(*, field, label, order, show_on_card, actor):
+    """Rename or reorder a field. The code stays as issued."""
+    field.label = (label or "").strip() or field.label
+    field.order = order if order is not None else field.order
+    field.show_on_card = bool(show_on_card)
+    field.save(update_fields=["label", "order", "show_on_card"])
+    return field
+
+
+@transaction.atomic
+def retire_spec_field(*, field, actor):
+    """Stop describing garments by this attribute. Existing values are kept."""
+    if field.is_active:
+        field.is_active = False
+        field.save(update_fields=["is_active"])
+    return field
+
+
+@transaction.atomic
+def restore_spec_field(*, field, actor):
+    if not field.is_active:
+        field.is_active = True
+        field.save(update_fields=["is_active"])
+    return field
+
+
+@transaction.atomic
+def save_guidance_card(*, card=None, name, url, summary, steps, actor):
+    """Create or rewrite one external-tool card.
+
+    Steps are replaced wholesale rather than edited row by row — the list is
+    short, and a textarea is a better editor for it than a formset.
+    """
+    from .models import GuidanceCard, GuidanceStep
+
+    name = (name or "").strip()
+    url = (url or "").strip()
+    if not name or not url:
+        raise ValidationError("A card needs a name and a link.")
+
+    if card is None:
+        card = GuidanceCard(order=_next_order(GuidanceCard.objects))
+    card.name = name
+    card.url = url
+    card.summary = (summary or "").strip()
+    card.full_clean()
+    card.save()
+
+    card.steps.all().delete()
+    lines = [line.strip() for line in (steps or "").splitlines() if line.strip()]
+    GuidanceStep.objects.bulk_create(
+        [GuidanceStep(card=card, order=(i + 1) * 10, text=line[:300]) for i, line in enumerate(lines)]
+    )
+    return card
+
+
+@transaction.atomic
+def retire_guidance_card(*, card, actor):
+    if card.is_active:
+        card.is_active = False
+        card.save(update_fields=["is_active"])
+    return card
+
+
+@transaction.atomic
+def restore_guidance_card(*, card, actor):
+    if not card.is_active:
+        card.is_active = True
+        card.save(update_fields=["is_active"])
+    return card
+
+
+def _apply_status_flags(status, *, is_initial, is_approval, is_terminal):
+    """Set the flags, keeping the one-initial-status invariant.
+
+    ``only_one_initial_status`` is a database constraint, so a second initial
+    status has to clear the first inside the same transaction or the write
+    fails.
+    """
+    if is_initial and not status.is_initial:
+        Status.objects.filter(is_initial=True).update(is_initial=False)
+    status.is_initial = bool(is_initial)
+    status.is_approval = bool(is_approval)
+    status.is_terminal = bool(is_terminal)
+
+
+@transaction.atomic
+def add_status(*, label, tone, is_initial=False, is_approval=False, is_terminal=False, actor):
+    """Add a workflow stage. Spec §9 is answered here, not in code."""
+    label = (label or "").strip()
+    if not label:
+        raise ValidationError("A status needs a name.")
+    if Status.objects.filter(label__iexact=label).exists():
+        raise ValidationError(f"{label} already exists.")
+
+    status = Status(
+        code=_unique_slug(Status, label),
+        label=label,
+        tone=tone or "neutral",
+        order=_next_order(Status.objects),
+    )
+    _apply_status_flags(status, is_initial=is_initial, is_approval=is_approval, is_terminal=is_terminal)
+    status.full_clean()
+    status.save()
+    return status
+
+
+@transaction.atomic
+def update_status(*, status, label, tone, order, is_initial=False, is_approval=False,
+                  is_terminal=False, actor):
+    """Rename, recolour, reorder or re-mean a stage.
+
+    The application reads the flags and never the name, so renaming is free.
+    Changing a flag changes behaviour — that is the whole point of them.
+    """
+    status.label = (label or "").strip() or status.label
+    status.tone = tone or status.tone
+    status.order = order if order is not None else status.order
+    _apply_status_flags(status, is_initial=is_initial, is_approval=is_approval, is_terminal=is_terminal)
+    status.save(update_fields=["label", "tone", "order", "is_initial", "is_approval", "is_terminal"])
+    return status
+
+
+@transaction.atomic
+def retire_status(*, status, actor):
+    """Stop offering a stage. Designs sitting in it stay where they are."""
+    if status.is_active:
+        status.is_active = False
+        status.save(update_fields=["is_active"])
+    return status
+
+
+@transaction.atomic
+def restore_status(*, status, actor):
+    if not status.is_active:
+        status.is_active = True
+        status.save(update_fields=["is_active"])
+    return status
+
+
+@transaction.atomic
+def set_transitions(*, status, targets, actor):
+    """Rewrite which stages this one may move to.
+
+    The only place in the application that really deletes rows, because an
+    `AllowedTransition` has no active flag: the absence of the row *is* the
+    meaning. No design data is touched.
+    """
+    wanted = {t.pk for t in targets if t.pk != status.pk}
+    status.transitions_out.exclude(to_status_id__in=wanted).delete()
+    existing = set(status.transitions_out.values_list("to_status_id", flat=True))
+    AllowedTransition.objects.bulk_create(
+        [AllowedTransition(from_status=status, to_status_id=pk) for pk in wanted - existing]
+    )
+    return status
+
+
+@transaction.atomic
+def add_teammate(*, username, full_name, password, actor):
+    """Add one of the team. There are no roles — everyone can do everything."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    username = (username or "").strip()
+    if not username:
+        raise ValidationError("A username is required.")
+    if User.objects.filter(username__iexact=username).exists():
+        raise ValidationError(f"{username} is taken.")
+    if not password:
+        raise ValidationError("Set a password so they can sign in.")
+
+    first, _, last = (full_name or "").strip().partition(" ")
+    user = User(username=username, first_name=first[:150], last_name=last[:150])
+    user.set_password(password)
+    user.save()
+    return user
+
+
+@transaction.atomic
+def set_teammate_password(*, user, password, actor):
+    if not password:
+        raise ValidationError("Type the new password first.")
+    user.set_password(password)
+    user.save(update_fields=["password"])
+    return user
+
+
+@transaction.atomic
+def deactivate_teammate(*, user, actor):
+    """Take someone out of the app without removing what they did.
+
+    Never a delete — every design, version and comment PROTECTs its author. And
+    never the last one standing: with no admin to recover from, that would lock
+    everybody out.
+    """
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    if user.is_active and User.objects.filter(is_active=True).count() <= 1:
+        raise ValidationError("This is the only active account — add another before removing it.")
+    if user.is_active:
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+    return user
+
+
+@transaction.atomic
+def reactivate_teammate(*, user, actor):
+    if not user.is_active:
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+    return user

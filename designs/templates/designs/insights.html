@@ -1,5 +1,11 @@
-{% extends "admin/base_site.html" %}
+{% extends "base.html" %}
+{% block title %}Insights · Selvedge{% endblock %}
+
+{% comment %} Spec §10, read in the app rather than in django-admin. {% endcomment %}
 {% block content %}
+<div class="wrap insights">
+  <div class="crumb"><a href="{% url 'design-list' %}">Design board</a> / Insights</div>
+
 <h1>Insights</h1>
 <p style="max-width:70ch;color:#666">
   These three numbers decide whether a future version should automate the image editing
@@ -37,4 +43,5 @@
   <li><b>{{ approved_count }}</b> approved, <b>{{ unapproved_count }}</b> still open</li>
   <li>Median <b>{{ median_lead }}</b>, mean <b>{{ mean_lead }}</b></li>
 </ul>
+</div>
 {% endblock %}

@@ -1,6 +1,6 @@
 """Day-one instrumentation.
 
-Three numbers, from spec §10, that decide whether a future version should
+Three numbers, from spec §10, read at ``/insights/``. They decide whether a future version should
 automate the image editing via an API — a decision costing ₹6,500–34,000 a
 month. Without real data that decision is guesswork, so these ship with V1
 rather than after it:
@@ -70,7 +70,7 @@ def insights_view(request):
 
     return render(
         request,
-        "admin/designs/insights.html",
+        "designs/insights.html",
         {
             "title": "Insights",
             "window_days": WINDOW_DAYS,

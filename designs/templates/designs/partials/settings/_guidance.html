@@ -1,0 +1,51 @@
+{% comment %} The external editing tools. Presentational only — the application tracks
+   nothing about what happens inside them (spec §5). Steps are one per line. {% endcomment %}
+<div class="hint">
+  These cards are what the sparkle button shows. One step per line — they are numbered
+  for you.
+</div>
+
+{% for card in cards %}
+  <div class="optgroup {% if not card.is_active %}retired{% endif %}">
+    <div class="optgroup-head">
+      <b>{{ card.name }}</b>
+      <form method="post" action="{% url 'guidance-toggle' card.pk %}" style="margin-left:auto"
+            hx-post="{% url 'guidance-toggle' card.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+        {% csrf_token %}
+        <button class="btn btn-ghost" type="submit">{% if card.is_active %}Hide{% else %}Show{% endif %}</button>
+      </form>
+    </div>
+
+    <form class="cardedit" method="post" action="{% url 'guidance-card-save' card.pk %}"
+          hx-post="{% url 'guidance-card-save' card.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+      {% csrf_token %}
+      <label class="ctl"><span class="eyebrow">Tool</span>
+        <input class="control" name="name" value="{{ card.name }}" required></label>
+      <label class="ctl"><span class="eyebrow">Link</span>
+        <input class="control" name="url" type="url" value="{{ card.url }}" required></label>
+      <label class="ctl wide"><span class="eyebrow">One line summary</span>
+        <input class="control" name="summary" value="{{ card.summary }}"></label>
+      <label class="ctl wide"><span class="eyebrow">Steps, one per line</span>
+        <textarea class="control" name="steps" rows="5">{% for step in card.steps.all %}{{ step.text }}
+{% endfor %}</textarea></label>
+      <div class="cardedit-actions"><button class="btn btn-primary" type="submit">Save card</button></div>
+    </form>
+  </div>
+{% endfor %}
+
+<div class="optgroup">
+  <div class="optgroup-head"><b>Add a tool</b></div>
+  <form class="cardedit" method="post" action="{% url 'guidance-save' %}"
+        hx-post="{% url 'guidance-save' %}" hx-target="#modal-body" hx-swap="innerHTML">
+    {% csrf_token %}
+    <label class="ctl"><span class="eyebrow">Tool</span>
+      <input class="control" name="name" placeholder="Google Gemini chat" required></label>
+    <label class="ctl"><span class="eyebrow">Link</span>
+      <input class="control" name="url" type="url" placeholder="https://…" required></label>
+    <label class="ctl wide"><span class="eyebrow">One line summary</span>
+      <input class="control" name="summary"></label>
+    <label class="ctl wide"><span class="eyebrow">Steps, one per line</span>
+      <textarea class="control" name="steps" rows="4"></textarea></label>
+    <div class="cardedit-actions"><button class="btn btn-primary" type="submit">Add tool</button></div>
+  </form>
+</div>

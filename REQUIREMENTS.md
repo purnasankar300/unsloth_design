@@ -228,6 +228,28 @@ risk formally. Do not leave it undecided by default.
 
 ---
 
+## 11b. Accepted Deviations From This Spec
+
+Recorded rather than hidden. The spec is frozen; these were decided afterwards,
+with the reasoning.
+
+- **django-admin was removed** (21 Aug 2026). §5, §6 and §10 name it as the place
+  a non-developer edits guidance cards, categories and reads the instrumentation.
+  All of that now lives in the application, under `/settings/` and `/insights/`,
+  because the team should learn one interface rather than two and admin exposes
+  raw table structure to people who should not have to think about it. The
+  *intent* of those clauses — changeable without a deploy, by a non-developer —
+  is met more completely than before: drops, statuses, transitions, spec fields
+  and user accounts are all editable in the app now, and several of those were
+  never reachable outside admin. Bootstrap into an empty database is
+  `manage.py createsuperuser`, which belongs to `django.contrib.auth`.
+- **Settings are open to every signed-in user**, consistent with §3's "no roles",
+  including adding and deactivating accounts. Gating them would have introduced
+  a role in all but name. The one guard: the last active account cannot be
+  deactivated.
+
+---
+
 ## 12. Operational Requirements
 
 - All service accounts (Neon, R2, VPS) on a **company card and shared company

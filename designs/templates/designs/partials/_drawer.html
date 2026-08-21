@@ -118,7 +118,7 @@
       <div class="specs-head">
         <span class="eyebrow">Design specification</span>
         <button class="btn btn-ghost" style="font-size:11.5px;padding:4px 8px"
-                hx-get="{% url 'spec-options' %}" hx-target="#modal-body" hx-swap="innerHTML">Edit option lists</button>
+                hx-get="{% url 'settings-section' 'spec-fields' %}" hx-target="#modal-body" hx-swap="innerHTML">Edit option lists</button>
       </div>
       {% include "designs/partials/_spec_grid.html" %}
     </div>

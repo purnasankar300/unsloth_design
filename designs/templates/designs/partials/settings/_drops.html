@@ -1,0 +1,42 @@
+{% comment %} A drop is a selling season. Its code is the first segment of every design
+   code, so it is typed rather than derived and never changes afterwards. {% endcomment %}
+<div class="hint">
+  A drop plus a category makes the design code — <span class="mono">SS26-KURTA-001</span>.
+  Retiring one leaves every design filed under it untouched; it only stops new designs using it.
+</div>
+
+<div class="optgroup">
+  <div class="optgroup-head">
+    <b>Drops</b>
+    <span class="eyebrow">{{ drops|length }} total</span>
+  </div>
+
+  <div class="setlist">
+    {% for drop in drops %}
+      <form class="setrow {% if not drop.is_active %}retired{% endif %}" method="post"
+            action="{% url 'drop-save' drop.pk %}"
+            hx-post="{% url 'drop-save' drop.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+        {% csrf_token %}
+        <span class="setcode mono">{{ drop.code }}</span>
+        <input class="control" name="label" value="{{ drop.label }}" aria-label="Name">
+        <button class="btn" type="submit">Save</button>
+        <button class="btn btn-ghost" type="submit"
+                formaction="{% url 'drop-toggle' drop.pk %}"
+                hx-post="{% url 'drop-toggle' drop.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+          {% if drop.is_active %}Retire{% else %}Restore{% endif %}
+        </button>
+      </form>
+    {% empty %}
+      <div class="hint" style="border:none">No drops yet. Add the current one below.</div>
+    {% endfor %}
+  </div>
+
+  <form class="optadd" method="post" action="{% url 'drop-add' %}"
+        hx-post="{% url 'drop-add' %}" hx-target="#modal-body" hx-swap="innerHTML">
+    {% csrf_token %}
+    <input class="control setcode" name="code" placeholder="SS26" required
+           pattern="[A-Za-z0-9]{2,8}" title="2–8 letters or digits" aria-label="Code">
+    <input class="control" name="label" placeholder="Spring/Summer 26" aria-label="Name">
+    <button class="btn btn-primary" type="submit">Add drop</button>
+  </form>
+</div>

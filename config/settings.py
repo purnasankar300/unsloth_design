@@ -24,7 +24,8 @@ DEBUG = env("DJANGO_DEBUG")
 ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    # django.contrib.admin is deliberately absent: configuration is edited in
+    # the application, under /settings/.
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

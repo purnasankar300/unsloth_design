@@ -1,0 +1,83 @@
+{% comment %} The specification grid itself: which attributes a garment is described by,
+   and the values offered for each. No name is written here — the whole screen
+   iterates whatever the tables hold. {% endcomment %}
+<div class="hint">
+  These attributes make the grid on every design. Removing a value leaves existing designs
+  untouched — it only stops new ones using it.
+</div>
+
+<div class="fieldsplit">
+  <div class="fieldlist">
+    {% for f in fields %}
+      <a class="navitem {% if not f.is_active %}retired{% endif %}"
+         aria-current="{% if field and f.pk == field.pk %}true{% else %}false{% endif %}"
+         href="{% url 'spec-options-field' f.code %}"
+         hx-get="{% url 'spec-options-field' f.code %}" hx-target="#modal-body" hx-swap="innerHTML">
+        {{ f.label }}
+        <span class="eyebrow">{{ f.options.count }}</span>
+      </a>
+    {% endfor %}
+
+    <form class="optadd stacked" method="post" action="{% url 'spec-field-add' %}"
+          hx-post="{% url 'spec-field-add' %}" hx-target="#modal-body" hx-swap="innerHTML">
+      {% csrf_token %}
+      <input class="control" name="label" placeholder="New attribute…" required aria-label="New attribute">
+      <button class="btn btn-primary" type="submit">Add</button>
+    </form>
+  </div>
+
+  <div class="fieldmain">
+    {% if field %}
+      <form class="setrow" method="post" action="{% url 'spec-field-save' field.pk %}"
+            hx-post="{% url 'spec-field-save' field.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+        {% csrf_token %}
+        <input class="control" name="label" value="{{ field.label }}" aria-label="Name">
+        <input class="control setorder" name="order" value="{{ field.order }}" aria-label="Order">
+        <label class="setcheck">
+          <input type="checkbox" name="show_on_card" {% if field.show_on_card %}checked{% endif %}>
+          on the card
+        </label>
+        <button class="btn" type="submit">Save</button>
+        <button class="btn btn-ghost" type="submit"
+                formaction="{% url 'spec-field-toggle' field.pk %}"
+                hx-post="{% url 'spec-field-toggle' field.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+          {% if field.is_active %}Retire{% else %}Restore{% endif %}
+        </button>
+      </form>
+
+      <div class="optgroup">
+        <div class="optgroup-head">
+          <b>{{ field.label }} values</b>
+          <span class="eyebrow">{{ options|length }} value{{ options|length|pluralize }}</span>
+        </div>
+
+        <div class="optlist">
+          {% for option in options %}
+            <span class="opt {% if not option.is_active %}retired{% endif %}">
+              {% if option.swatch_hex %}<span class="swatchdot" style="background:{{ option.swatch_hex }}"></span>{% endif %}
+              {{ option.label }}
+              {% if option.is_active %}
+                <form method="post" action="{% url 'spec-option-retire' option.pk %}" style="display:inline"
+                      hx-post="{% url 'spec-option-retire' option.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+                  {% csrf_token %}
+                  <button type="submit" title="Remove from the list">&times;</button>
+                </form>
+              {% endif %}
+            </span>
+          {% empty %}
+            <span class="hint" style="border:none;padding:0">No values yet.</span>
+          {% endfor %}
+        </div>
+
+        <form class="optadd" method="post" action="{% url 'spec-option-add' field.code %}"
+              hx-post="{% url 'spec-option-add' field.code %}" hx-target="#modal-body" hx-swap="innerHTML">
+          {% csrf_token %}
+          <input class="control" name="label" placeholder="Add a value…" required aria-label="New value">
+          <button class="btn btn-primary" type="submit">Add</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="hint">No attributes yet. Add the first one on the left.</div>
+    {% endif %}
+  </div>
+</div>

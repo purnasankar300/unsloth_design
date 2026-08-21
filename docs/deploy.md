@@ -93,7 +93,8 @@ certbot.
 
 ## 4. Users
 
-Five or six accounts, created in `/admin/`. There are **no roles** — any user
+Five or six accounts. The first comes from `manage.py createsuperuser`; the rest are added
+in the app under Settings → Team. There are **no roles** — any user
 can do anything, including approving their own design. That is deliberate for a
 team this size, and self-approval is recorded and displayed as such.
 
@@ -112,7 +113,7 @@ Then do the restore drill in `restore-test.md` **before go-live**.
 - The weekly backup actually ran (check the log and the `backups/` prefix).
 - The card on the Neon and Cloudflare accounts is still valid.
 - Disk on the VPS is not filling up.
-- Skim `/admin/designs/design/insights/` — the numbers there are what a decision
+- Skim `/insights/` — the numbers there are what a decision
   about automated image editing will eventually rest on.
 
 ## 7. One decision that is not technical

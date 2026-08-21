@@ -16,11 +16,12 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from . import services, storage
+from .insights import insights_view
 from .forms import (
     AssetsForm,
     CommentForm,
@@ -213,7 +214,7 @@ def design_create(request):
     if not Season.objects.filter(is_active=True).exists() or not Category.objects.filter(is_active=True).exists():
         messages.warning(
             request,
-            "Add at least one drop and one category in the admin first — they make up the design code.",
+            "Add at least one drop and one category under Settings first — they make up the design code.",
         )
 
     return render(request, "designs/create.html", {"form": form})
@@ -407,40 +408,220 @@ def spec_set(request, code):
     )
 
 
-def _options_context(field=None):
-    fields = SpecField.objects.filter(is_active=True).prefetch_related("options")
-    selected = field or fields.first()
-    return {
-        "fields": fields,
-        "field": selected,
-        "options": selected.options.all() if selected else [],
+# --------------------------------------------------------------------------
+# Settings. There is no django-admin: everything a non-developer has to change
+# lives here, and spec §3 means any signed-in user may change it.
+# --------------------------------------------------------------------------
+
+SETTINGS_SECTIONS = [
+    ("drops", "Drops"),
+    ("categories", "Categories"),
+    ("spec-fields", "Specification"),
+    ("guidance", "Guidance cards"),
+    ("workflow", "Workflow"),
+    ("team", "Team"),
+]
+
+
+def _settings_context(section, *, field=None):
+    """Everything the settings modal needs, for whichever section is open."""
+    from django.contrib.auth import get_user_model
+
+    context = {
+        "sections": SETTINGS_SECTIONS,
+        "section": section,
+        "section_label": dict(SETTINGS_SECTIONS).get(section, ""),
     }
 
+    if section == "drops":
+        context["drops"] = Season.objects.all()
+    elif section == "categories":
+        context["categories"] = Category.objects.all()
+    elif section == "spec-fields":
+        fields = SpecField.objects.all().prefetch_related("options")
+        selected = field or fields.filter(is_active=True).first() or fields.first()
+        context.update(fields=fields, field=selected,
+                       options=selected.options.all() if selected else [])
+    elif section == "guidance":
+        context["cards"] = GuidanceCard.objects.all().prefetch_related("steps")
+    elif section == "workflow":
+        statuses = list(Status.objects.all().prefetch_related("transitions_out"))
+        for status in statuses:
+            status.target_ids = {t.to_status_id for t in status.transitions_out.all()}
+        context.update(statuses=statuses, tones=Status.TONES)
+    elif section == "team":
+        context["teammates"] = get_user_model().objects.order_by("-is_active", "username")
 
-def spec_options(request, field_code=None):
-    """The option-list editor behind the gear button."""
-    field = get_object_or_404(SpecField, code=field_code) if field_code else None
-    context = _options_context(field)
+    return context
+
+
+def _settings_render(request, section, *, field=None, toast=""):
+    """Modal for htmx, ordinary page otherwise. Same contract as the drawer."""
+    context = _settings_context(section, field=field)
     template = (
         "designs/partials/_settings_modal.html"
         if request.headers.get("HX-Request")
-        else "designs/options.html"
+        else "designs/settings.html"
     )
-    return render(request, template, context)
+    response = render(request, template, context)
+    if toast:
+        response["HX-Trigger"] = json.dumps({"toast": toast})
+    return response
+
+
+def _settings_response(request, section, toast, *, field=None):
+    """Answer a settings POST the way it was asked."""
+    if not request.headers.get("HX-Request"):
+        return redirect("settings-section", section=section)
+    return _settings_render(request, section, field=field, toast=toast)
+
+
+def _note(request, action):
+    """Run a service call, turning a ValidationError into a message."""
+    try:
+        return action(), ""
+    except ValidationError as error:
+        note = "; ".join(error.messages)
+        messages.error(request, note)
+        return None, note
+
+
+def settings_home(request):
+    return redirect("settings-section", section=SETTINGS_SECTIONS[0][0])
+
+
+def settings_section(request, section):
+    if section not in dict(SETTINGS_SECTIONS):
+        raise Http404("No such settings section.")
+    return _settings_render(request, section)
+
+
+def spec_options(request, field_code):
+    """One field's option list — the drawer links straight to it."""
+    field = get_object_or_404(SpecField, code=field_code)
+    return _settings_render(request, "spec-fields", field=field)
+
+
+# --- drops -----------------------------------------------------------------
+
+@require_POST
+def drop_add(request):
+    drop, note = _note(request, lambda: services.add_drop(
+        code=request.POST.get("code", ""), label=request.POST.get("label", ""), actor=request.user))
+    if drop:
+        note = f"Added drop {drop.code}."
+        messages.success(request, note)
+    return _settings_response(request, "drops", note)
+
+
+@require_POST
+def drop_save(request, pk):
+    drop = get_object_or_404(Season, pk=pk)
+    services.update_drop(drop=drop, label=request.POST.get("label", ""), actor=request.user)
+    note = f"{drop.code} renamed."
+    messages.success(request, note)
+    return _settings_response(request, "drops", note)
+
+
+@require_POST
+def drop_toggle(request, pk):
+    drop = get_object_or_404(Season, pk=pk)
+    if drop.is_active:
+        services.retire_drop(drop=drop, actor=request.user)
+        note = f"{drop.code} retired. Designs already filed under it keep it."
+    else:
+        services.restore_drop(drop=drop, actor=request.user)
+        note = f"{drop.code} is offered again."
+    messages.success(request, note)
+    return _settings_response(request, "drops", note)
+
+
+# --- categories ------------------------------------------------------------
+
+@require_POST
+def category_add(request):
+    category, note = _note(request, lambda: services.add_category(
+        code=request.POST.get("code", ""), label=request.POST.get("label", ""), actor=request.user))
+    if category:
+        note = f"Added category {category.code}."
+        messages.success(request, note)
+    return _settings_response(request, "categories", note)
+
+
+@require_POST
+def category_save(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    services.update_category(category=category, label=request.POST.get("label", ""), actor=request.user)
+    note = f"{category.code} renamed."
+    messages.success(request, note)
+    return _settings_response(request, "categories", note)
+
+
+@require_POST
+def category_toggle(request, pk):
+    category = get_object_or_404(Category, pk=pk)
+    if category.is_active:
+        services.retire_category(category=category, actor=request.user)
+        note = f"{category.code} retired. Designs already in it keep it."
+    else:
+        services.restore_category(category=category, actor=request.user)
+        note = f"{category.code} is offered again."
+    messages.success(request, note)
+    return _settings_response(request, "categories", note)
+
+
+# --- the specification grid ------------------------------------------------
+
+@require_POST
+def spec_field_add(request):
+    field, note = _note(request, lambda: services.add_spec_field(
+        label=request.POST.get("label", ""),
+        show_on_card=request.POST.get("show_on_card") == "on",
+        actor=request.user))
+    if field:
+        note = f"Added {field.label}."
+        messages.success(request, note)
+    return _settings_response(request, "spec-fields", note, field=field)
+
+
+@require_POST
+def spec_field_save(request, pk):
+    field = get_object_or_404(SpecField, pk=pk)
+    order = request.POST.get("order")
+    services.update_spec_field(
+        field=field,
+        label=request.POST.get("label", ""),
+        order=int(order) if order and order.isdigit() else None,
+        show_on_card=request.POST.get("show_on_card") == "on",
+        actor=request.user,
+    )
+    note = f"{field.label} updated."
+    messages.success(request, note)
+    return _settings_response(request, "spec-fields", note, field=field)
+
+
+@require_POST
+def spec_field_toggle(request, pk):
+    field = get_object_or_404(SpecField, pk=pk)
+    if field.is_active:
+        services.retire_spec_field(field=field, actor=request.user)
+        note = f"{field.label} retired. Designs already carrying a value keep it."
+    else:
+        services.restore_spec_field(field=field, actor=request.user)
+        note = f"{field.label} is back on the grid."
+    messages.success(request, note)
+    return _settings_response(request, "spec-fields", note, field=field)
 
 
 @require_POST
 def spec_option_add(request, field_code):
     field = get_object_or_404(SpecField, code=field_code)
-    try:
-        option = services.add_spec_option(field=field, label=request.POST.get("label", ""), actor=request.user)
-    except ValidationError as error:
-        note = "; ".join(error.messages)
-        messages.error(request, note)
-    else:
+    option, note = _note(request, lambda: services.add_spec_option(
+        field=field, label=request.POST.get("label", ""), actor=request.user))
+    if option:
         note = f"Added {option.label} to {field.label}."
         messages.success(request, note)
-    return _options_response(request, field, note)
+    return _settings_response(request, "spec-fields", note, field=field)
 
 
 @require_POST
@@ -449,15 +630,152 @@ def spec_option_retire(request, pk):
     services.retire_spec_option(option=option, actor=request.user)
     note = f"Removed {option.label} from {option.field.label}. Designs already using it keep it."
     messages.success(request, note)
-    return _options_response(request, option.field, note)
+    return _settings_response(request, "spec-fields", note, field=option.field)
 
 
-def _options_response(request, field, toast):
-    if not request.headers.get("HX-Request"):
-        return redirect("spec-options-field", field_code=field.code)
-    response = render(request, "designs/partials/_settings_modal.html", _options_context(field))
-    response["HX-Trigger"] = json.dumps({"toast": toast})
-    return response
+# --- external tools --------------------------------------------------------
+
+@require_POST
+def guidance_save(request, pk=None):
+    card = get_object_or_404(GuidanceCard, pk=pk) if pk else None
+    saved, note = _note(request, lambda: services.save_guidance_card(
+        card=card,
+        name=request.POST.get("name", ""),
+        url=request.POST.get("url", ""),
+        summary=request.POST.get("summary", ""),
+        steps=request.POST.get("steps", ""),
+        actor=request.user,
+    ))
+    if saved:
+        note = f"{saved.name} saved."
+        messages.success(request, note)
+    return _settings_response(request, "guidance", note)
+
+
+@require_POST
+def guidance_toggle(request, pk):
+    card = get_object_or_404(GuidanceCard, pk=pk)
+    if card.is_active:
+        services.retire_guidance_card(card=card, actor=request.user)
+        note = f"{card.name} hidden."
+    else:
+        services.restore_guidance_card(card=card, actor=request.user)
+        note = f"{card.name} shown again."
+    messages.success(request, note)
+    return _settings_response(request, "guidance", note)
+
+
+# --- the workflow, spec §9 -------------------------------------------------
+
+def _status_flags(request):
+    return {
+        "is_initial": request.POST.get("is_initial") == "on",
+        "is_approval": request.POST.get("is_approval") == "on",
+        "is_terminal": request.POST.get("is_terminal") == "on",
+    }
+
+
+@require_POST
+def status_add(request):
+    status, note = _note(request, lambda: services.add_status(
+        label=request.POST.get("label", ""), tone=request.POST.get("tone", "neutral"),
+        actor=request.user, **_status_flags(request)))
+    if status:
+        note = f"Added {status.label}."
+        messages.success(request, note)
+    return _settings_response(request, "workflow", note)
+
+
+@require_POST
+def status_save(request, pk):
+    status = get_object_or_404(Status, pk=pk)
+    order = request.POST.get("order")
+    services.update_status(
+        status=status,
+        label=request.POST.get("label", ""),
+        tone=request.POST.get("tone", ""),
+        order=int(order) if order and order.isdigit() else None,
+        actor=request.user,
+        **_status_flags(request),
+    )
+    note = f"{status.label} updated."
+    messages.success(request, note)
+    return _settings_response(request, "workflow", note)
+
+
+@require_POST
+def status_toggle(request, pk):
+    status = get_object_or_404(Status, pk=pk)
+    if status.is_active:
+        services.retire_status(status=status, actor=request.user)
+        note = f"{status.label} retired. Designs sitting in it stay where they are."
+    else:
+        services.restore_status(status=status, actor=request.user)
+        note = f"{status.label} is back in the pipeline."
+    messages.success(request, note)
+    return _settings_response(request, "workflow", note)
+
+
+@require_POST
+def status_moves(request, pk):
+    """Which stages this one may move to."""
+    status = get_object_or_404(Status, pk=pk)
+    targets = Status.objects.filter(pk__in=request.POST.getlist("targets"))
+    services.set_transitions(status=status, targets=targets, actor=request.user)
+    note = f"Moves out of {status.label} updated."
+    messages.success(request, note)
+    return _settings_response(request, "workflow", note)
+
+
+# --- the team --------------------------------------------------------------
+
+@require_POST
+def teammate_add(request):
+    user, note = _note(request, lambda: services.add_teammate(
+        username=request.POST.get("username", ""),
+        full_name=request.POST.get("full_name", ""),
+        password=request.POST.get("password", ""),
+        actor=request.user,
+    ))
+    if user:
+        note = f"{user.username} can sign in now."
+        messages.success(request, note)
+    return _settings_response(request, "team", note)
+
+
+@require_POST
+def teammate_password(request, pk):
+    from django.contrib.auth import get_user_model
+
+    user = get_object_or_404(get_user_model(), pk=pk)
+    _, note = _note(request, lambda: services.set_teammate_password(
+        user=user, password=request.POST.get("password", ""), actor=request.user))
+    if not note:
+        note = f"New password set for {user.username}."
+        messages.success(request, note)
+    return _settings_response(request, "team", note)
+
+
+@require_POST
+def teammate_toggle(request, pk):
+    from django.contrib.auth import get_user_model
+
+    user = get_object_or_404(get_user_model(), pk=pk)
+    if user.is_active:
+        _, note = _note(request, lambda: services.deactivate_teammate(user=user, actor=request.user))
+        if not note:
+            note = f"{user.username} can no longer sign in. Everything they did stays."
+            messages.success(request, note)
+    else:
+        services.reactivate_teammate(user=user, actor=request.user)
+        note = f"{user.username} can sign in again."
+        messages.success(request, note)
+    return _settings_response(request, "team", note)
+
+
+def insights(request):
+    """The §10 instrumentation, no longer behind django-admin."""
+    return insights_view(request)
 
 
 def guidance_modal(request):

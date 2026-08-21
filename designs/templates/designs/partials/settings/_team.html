@@ -1,0 +1,51 @@
+{% comment %} The team. No roles (spec §3): everyone here can do everything, including
+   approving their own design. Nobody is ever deleted — removing someone stops
+   them signing in and leaves every design, version and comment they made. {% endcomment %}
+<div class="hint">
+  Everyone here can do everything — there are no roles. Removing someone only stops them
+  signing in; what they uploaded and said stays on the record.
+</div>
+
+<div class="optgroup">
+  <div class="optgroup-head">
+    <b>Members</b>
+    <span class="eyebrow">{{ teammates|length }} account{{ teammates|length|pluralize }}</span>
+  </div>
+
+  <div class="setlist">
+    {% for member in teammates %}
+      <div class="setrow wrap {% if not member.is_active %}retired{% endif %}">
+        <span class="avatar">{{ member.get_username|slice:":2"|upper }}</span>
+        <span class="setname">
+          <b>{{ member.get_full_name|default:member.get_username }}</b>
+          <span class="mono">{{ member.username }}</span>
+        </span>
+
+        <form method="post" action="{% url 'teammate-password' member.pk %}" class="inlineform"
+              hx-post="{% url 'teammate-password' member.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+          {% csrf_token %}
+          <input class="control" type="password" name="password" placeholder="New password"
+                 aria-label="New password for {{ member.username }}" required>
+          <button class="btn" type="submit">Reset</button>
+        </form>
+
+        <form method="post" action="{% url 'teammate-toggle' member.pk %}"
+              hx-post="{% url 'teammate-toggle' member.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+          {% csrf_token %}
+          <button class="btn btn-ghost" type="submit">
+            {% if member.is_active %}Remove access{% else %}Restore access{% endif %}
+          </button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+
+  <form class="optadd" method="post" action="{% url 'teammate-add' %}"
+        hx-post="{% url 'teammate-add' %}" hx-target="#modal-body" hx-swap="innerHTML">
+    {% csrf_token %}
+    <input class="control" name="username" placeholder="username" required aria-label="Username">
+    <input class="control" name="full_name" placeholder="Full name" aria-label="Full name">
+    <input class="control" type="password" name="password" placeholder="Password" required aria-label="Password">
+    <button class="btn btn-primary" type="submit">Add member</button>
+  </form>
+</div>

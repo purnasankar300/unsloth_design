@@ -9,7 +9,7 @@ There is no cleverness in the middle. The value is the record: what was tried,
 who said what, which version won, and when.
 
 **The application never calls a model API.** All editing happens outside it,
-by hand, in tools described by admin-editable guidance cards.
+by hand, in tools described by guidance cards the team edits under Settings.
 
 ---
 
@@ -36,9 +36,9 @@ Supporting modules:
 | `codes.py` | Design code allocation. `SELECT … FOR UPDATE` on a counter row so concurrent creates cannot collide. |
 | `imaging.py` | The single upload pipeline: validate it is an image, SHA-256 it, read dimensions, generate a thumbnail. |
 | `storage.py` | Opaque key construction and short-lived signed URLs. |
-| `insights.py` | The §10 instrumentation, rendered inside admin. |
+| `insights.py` | The §10 instrumentation, rendered at `/insights/`. |
 | `forms.py` | `NewDesignForm`, `NewVersionForm`, `CommentForm`, `AssetsForm`, `MeasurementFormSet`. |
-| `admin.py` | Where a non-developer edits statuses, spec fields and guidance cards. |
+
 
 ---
 
@@ -108,7 +108,8 @@ Inside the drawer:
 
 ### Modals
 - **Sparkle** → the guidance cards: which external tool to use and the steps for it.
-- **Gear** → the option-list editor: add or retire values on any spec field.
+- **Gear** → settings: drops, categories, the specification grid, guidance cards, the
+  workflow and the team. Six sections in one modal; this is what replaced django-admin.
 - **Assets Edit** → the authoritative assets form, so editing them never leaves the drawer.
 
 All three also render as ordinary pages (`/guidance/`, `/spec-options/`,
@@ -137,13 +138,17 @@ is load-bearing** — every URL it touches renders as a page on its own.
 | `/designs/<code>/status/` | `status-change` | POST |
 | `/designs/<code>/assets/` | `assets-edit` | Authoritative assets + measurements. Modal for htmx, page otherwise |
 | `/designs/<code>/specs/` | `spec-set` | POST one field + option |
-| `/spec-options/`, `/spec-options/<field>/` | `spec-options`, `spec-options-field` | Modal or page |
-| `/spec-options/<field>/add/` | `spec-option-add` | POST |
-| `/spec-option/<pk>/retire/` | `spec-option-retire` | POST |
+| `/settings/`, `/settings/<section>/` | `settings`, `settings-section` | Drops, categories, spec fields, guidance, workflow, team. Modal or page |
+| `/settings/spec-fields/<field>/options/` | `spec-options-field` | One field's value list |
+| `/insights/` | `insights` | The §10 numbers. Was an admin page |
+| `/settings/spec-fields/<field>/options/add/` | `spec-option-add` | POST |
+| `/settings/spec-options/<pk>/retire/` | `spec-option-retire` | POST |
+| `/settings/<thing>/add/`, `/<pk>/save/`, `/<pk>/toggle/` | `drop-*`, `category-*`, `spec-field-*`, `guidance-*`, `status-*`, `teammate-*` | POST. `toggle` retires or restores |
+| `/settings/workflow/<pk>/moves/` | `status-moves` | POST the legal moves out of one stage |
 | `/guidance/` | `guidance-modal` | Modal or page |
 | `/images/<uuid>/` | `version-image` | 302 → signed URL |
 | `/images/<uuid>/thumb/` | `version-thumbnail` | 302 → signed URL |
-| `/admin/…` | | Reference data, history, insights |
+
 
 Every POST answers the way it was asked: an htmx caller gets the re-rendered
 drawer plus a toast, a plain form post gets a redirect with a Django message.
@@ -167,11 +172,14 @@ anonymous access.
 - **Versions form a tree, not a chain.** Re-branching from the reference is the
   answer to accumulated degradation; `depth_from_reference` is what surfaces it.
 - **Comments attach to a Version, not a Design.**
-- **Nothing is ever deleted.** `PROTECT` throughout, no delete views, admin
-  delete off for Design / Version / Comment.
-- **No roles.** Any user may do anything, including approving their own design.
-  Do not add a permission system — self-approval is stored on the transition and
-  shown in the trail.
+- **Nothing is ever deleted.** `PROTECT` throughout, no delete views, and every
+  "remove" in Settings is `is_active = False`.
+- **No roles.** Any user may do anything, including approving their own design
+  and changing any setting. Do not add a permission system — self-approval is
+  stored on the transition and shown in the trail.
+- **No django-admin.** Configuration lives under `/settings/`. A deliberate
+  deviation from spec §5/§6/§10; `manage.py createsuperuser` is the only
+  bootstrap into an empty database.
 - **No AI/LLM calls**, ever.
 - **`Version.number` is 1-based; the UI is not.** Use `display_label` in
   templates, `number` in URLs.
@@ -200,7 +208,7 @@ accounts or accept the risk formally — do not leave it undecided.
 
 ## Instrumentation
 
-`/admin/designs/design/insights/` reports, from day one:
+`/insights/` reports, from day one:
 
 1. Versions per design — how many revision rounds actually happen
 2. Uploads per day, per user and total
@@ -214,7 +222,7 @@ via API — a ₹6,500–34,000/month decision that is guesswork without real da
 ## Tests
 
 ```bash
-.venv/bin/python manage.py test designs      # 76 tests
+.venv/bin/python manage.py test designs      # 101 tests
 ```
 
 - `test_domain.py` — creation and codes, the upload pipeline, the version tree,

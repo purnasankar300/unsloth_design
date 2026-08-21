@@ -264,8 +264,11 @@ class BoardTests(TestCase):
         self.assertIn("toast", response.headers.get("HX-Trigger", ""))
         self.assertEqual(DesignSpec.objects.get(design=self.design, field=field).option, option)
 
-    def test_option_lists_and_guidance_render_without_htmx(self):
-        for url in [reverse("spec-options"), reverse("guidance-modal")]:
+    def test_settings_and_guidance_render_without_htmx(self):
+        urls = [reverse("guidance-modal"), reverse("insights")]
+        urls += [reverse("settings-section", args=[code]) for code in
+                 ["drops", "categories", "spec-fields", "guidance", "workflow", "team"]]
+        for url in urls:
             response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn(b"<!doctype html>", response.content.lower())
+            self.assertEqual(response.status_code, 200, url)
+            self.assertIn(b"<!doctype html>", response.content.lower(), url)

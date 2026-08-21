@@ -1,0 +1,69 @@
+{% comment %} The pipeline. Spec §9 is answered here, not in code: the application reads
+   the three flags and never a stage's name, so renaming one is free and changing
+   a flag is what changes behaviour. A move is legal only if it is ticked. {% endcomment %}
+<div class="hint">
+  The application reads the flags below, never the name — rename a stage freely.
+  A design may only move where the ticks allow.
+</div>
+
+{% for status in statuses %}
+  <div class="optgroup {% if not status.is_active %}retired{% endif %}">
+    <div class="optgroup-head">
+      <b>{{ status.label }}</b>
+      <span class="stamp st-{{ status.tone }}">{{ status.label }}</span>
+      <form method="post" action="{% url 'status-toggle' status.pk %}" style="margin-left:auto"
+            hx-post="{% url 'status-toggle' status.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+        {% csrf_token %}
+        <button class="btn btn-ghost" type="submit">{% if status.is_active %}Retire{% else %}Restore{% endif %}</button>
+      </form>
+    </div>
+
+    <form class="setrow wrap" method="post" action="{% url 'status-save' status.pk %}"
+          hx-post="{% url 'status-save' status.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+      {% csrf_token %}
+      <input class="control" name="label" value="{{ status.label }}" aria-label="Name">
+      <select class="control" name="tone" aria-label="Badge colour">
+        {% for value, text in tones %}
+          <option value="{{ value }}" {% if status.tone == value %}selected{% endif %}>{{ text }}</option>
+        {% endfor %}
+      </select>
+      <input class="control setorder" name="order" value="{{ status.order }}" aria-label="Order">
+      <label class="setcheck"><input type="checkbox" name="is_initial" {% if status.is_initial %}checked{% endif %}> starts here</label>
+      <label class="setcheck"><input type="checkbox" name="is_approval" {% if status.is_approval %}checked{% endif %}> approves</label>
+      <label class="setcheck"><input type="checkbox" name="is_terminal" {% if status.is_terminal %}checked{% endif %}> finished</label>
+      <button class="btn" type="submit">Save</button>
+    </form>
+
+    <form class="movegrid" method="post" action="{% url 'status-moves' status.pk %}"
+          hx-post="{% url 'status-moves' status.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+      {% csrf_token %}
+      <span class="eyebrow">May move to</span>
+      {% for other in statuses %}
+        {% if other.pk != status.pk %}
+          <label class="setcheck">
+            <input type="checkbox" name="targets" value="{{ other.pk }}"
+                   {% if other.pk in status.target_ids %}checked{% endif %}>
+            {{ other.label }}
+          </label>
+        {% endif %}
+      {% endfor %}
+      <button class="btn" type="submit">Save moves</button>
+    </form>
+  </div>
+{% endfor %}
+
+<div class="optgroup">
+  <div class="optgroup-head"><b>Add a stage</b></div>
+  <form class="setrow wrap" method="post" action="{% url 'status-add' %}"
+        hx-post="{% url 'status-add' %}" hx-target="#modal-body" hx-swap="innerHTML">
+    {% csrf_token %}
+    <input class="control" name="label" placeholder="Stage name" required aria-label="Name">
+    <select class="control" name="tone" aria-label="Badge colour">
+      {% for value, text in tones %}<option value="{{ value }}">{{ text }}</option>{% endfor %}
+    </select>
+    <label class="setcheck"><input type="checkbox" name="is_initial"> starts here</label>
+    <label class="setcheck"><input type="checkbox" name="is_approval"> approves</label>
+    <label class="setcheck"><input type="checkbox" name="is_terminal"> finished</label>
+    <button class="btn btn-primary" type="submit">Add stage</button>
+  </form>
+</div>

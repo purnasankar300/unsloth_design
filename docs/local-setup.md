@@ -79,15 +79,20 @@ MinIO console: <http://127.0.0.1:9001> — user `selvedge`, password
 
 This also seeds the reference data: 6 placeholder statuses with their 16 legal
 transitions, 15 specification fields with their option lists, and 2 guidance
-cards. All of it is editable in admin afterwards.
+cards. All of it is editable afterwards under **Settings** in the app.
 
-### 5. A user
+### 5. The first user
 
-There is no self-signup — the team is 5–6 named people.
+There is no self-signup — the team is 5–6 named people — and there is no
+django-admin, so this command is the **only** way into a fresh database. Every
+account after this one is added in the app, under Settings → Team.
 
 ```bash
 .venv/bin/python manage.py createsuperuser
 ```
+
+(`createsuperuser` belongs to `django.contrib.auth`, not to admin, so it still
+works. The superuser flags it sets are inert — there are no roles.)
 
 ### 6. Seasons and categories
 
@@ -96,9 +101,9 @@ the UI — so **at least one active season
 and one active category must exist before a design can be created.** The app
 warns you on the create page if they are missing.
 
-Add them at <http://127.0.0.1:8000/admin/designs/season/> and
-`/admin/designs/category/`. Codes are 2–8 capitals or digits — e.g. season
-`SS26` / *Spring/Summer 26*, category `TSHIRT` / *T-Shirt*.
+Add them in the app: the gear icon → **Drops** and **Categories**. Codes are
+2–8 capitals or digits — e.g. drop `SS26` / *Spring/Summer 26*, category
+`TSHIRT` / *T-Shirt*.
 
 ### 7. Run it
 
@@ -107,8 +112,8 @@ Add them at <http://127.0.0.1:8000/admin/designs/season/> and
 ```
 
 - Board: <http://127.0.0.1:8000/>
-- Admin: <http://127.0.0.1:8000/admin/>
-- Insights: <http://127.0.0.1:8000/admin/designs/design/insights/>
+- Settings: <http://127.0.0.1:8000/settings/>
+- Insights: <http://127.0.0.1:8000/insights/>
 
 ---
 
@@ -179,7 +184,7 @@ storage-init` and check its log.
 **`DJANGO_SECRET_KEY` KeyError on startup**
 `.env` is missing. Copy `.env.example`.
 
-**"Add at least one drop and one category in the admin first"**
+**"Add at least one drop and one category under Settings first"** — the gear icon
 Exactly that — see step 6.
 
 **`test_parallel_allocation_produces_unique_codes` errors**

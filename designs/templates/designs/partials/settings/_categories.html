@@ -1,0 +1,40 @@
+{% comment %} A category is the second segment of the design code. Same rules as a drop. {% endcomment %}
+<div class="hint">
+  The second segment of the design code. Retiring one keeps every design already in it.
+</div>
+
+<div class="optgroup">
+  <div class="optgroup-head">
+    <b>Categories</b>
+    <span class="eyebrow">{{ categories|length }} total</span>
+  </div>
+
+  <div class="setlist">
+    {% for category in categories %}
+      <form class="setrow {% if not category.is_active %}retired{% endif %}" method="post"
+            action="{% url 'category-save' category.pk %}"
+            hx-post="{% url 'category-save' category.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+        {% csrf_token %}
+        <span class="setcode mono">{{ category.code }}</span>
+        <input class="control" name="label" value="{{ category.label }}" aria-label="Name">
+        <button class="btn" type="submit">Save</button>
+        <button class="btn btn-ghost" type="submit"
+                formaction="{% url 'category-toggle' category.pk %}"
+                hx-post="{% url 'category-toggle' category.pk %}" hx-target="#modal-body" hx-swap="innerHTML">
+          {% if category.is_active %}Retire{% else %}Restore{% endif %}
+        </button>
+      </form>
+    {% empty %}
+      <div class="hint" style="border:none">No categories yet.</div>
+    {% endfor %}
+  </div>
+
+  <form class="optadd" method="post" action="{% url 'category-add' %}"
+        hx-post="{% url 'category-add' %}" hx-target="#modal-body" hx-swap="innerHTML">
+    {% csrf_token %}
+    <input class="control setcode" name="code" placeholder="KURTA" required
+           pattern="[A-Za-z0-9]{2,8}" title="2–8 letters or digits" aria-label="Code">
+    <input class="control" name="label" placeholder="Kurta" aria-label="Name">
+    <button class="btn btn-primary" type="submit">Add category</button>
+  </form>
+</div>

@@ -14,24 +14,27 @@ Selvedge — an internal Django app for a 5–6 person garment design team in In
 docker compose up -d                              # postgres:16 + MinIO (stands in for R2)
 .venv/bin/python manage.py migrate                # also seeds statuses, spec fields, guidance cards
 .venv/bin/python manage.py runserver
-.venv/bin/python manage.py test designs           # 76 tests
+.venv/bin/python manage.py test designs           # 101 tests
 .venv/bin/python manage.py test designs.tests.test_domain.StatusTests.test_self_approval_is_permitted_but_flagged
 .venv/bin/python manage.py dump_to_r2             # weekly backup, needs pg_dump on PATH
 ```
 
-Postgres is on **port 5433** (not 5432) to avoid colliding with a local install. Admin insights live at `/admin/designs/design/insights/`. Deps are managed with `uv` against the in-tree `.venv`.
+Postgres is on **port 5433** (not 5432) to avoid colliding with a local install. Deps are managed with `uv` against the in-tree `.venv`.
 
 ## Architecture
 
 Single app, `designs/`. The layering matters: **views never write to the ORM directly** — every multi-table write goes through `designs/services.py`, which is where attribution, transition validation and the audit trail are enforced. Adding a write path that bypasses it will silently drop the audit record.
 
-- `services.py` — `create_design`, `add_version`, `add_comment`, `change_status`,
+- `services.py` — designs: `create_design`, `add_version`, `add_comment`, `change_status`,
   `update_design`, `set_requirement`, `activity`, `build_tree`, `duplicate_of`, `set_spec`,
-  `add_spec_option`, `retire_spec_option`, `spec_choices`
+  `spec_choices`. Configuration (what admin used to do): `add_drop`/`update_drop`/`retire_drop`,
+  the same trio for categories, spec fields and guidance cards, `add_status`/`update_status`/
+  `retire_status`/`set_transitions`, `add_spec_option`/`retire_spec_option`, and
+  `add_teammate`/`set_teammate_password`/`deactivate_teammate`
 - `codes.py` — design code allocation, `select_for_update` on a counter row
 - `imaging.py` — the single upload pipeline: validate, sha256, dimensions, thumbnail
 - `storage.py` — opaque key construction and signed URLs
-- `insights.py` — the §10 instrumentation, rendered inside admin
+- `insights.py` — the §10 instrumentation, rendered at `/insights/`
 
 The UI is a **board of cards with a slide-over drawer**. `design_detail` returns
 `partials/_drawer.html` to an htmx request and `detail.html` — the same partial in a page
@@ -49,6 +52,14 @@ the design header and a version's requirement — are held in the URL as `?edit=
 The drawer's right column is **one chronological activity feed** for the whole design —
 uploads, status moves and comments interleaved, built by `services.activity`. Comments are
 still written against the version on screen; the feed only reads across all of them.
+
+**There is no django-admin.** It is out of `INSTALLED_APPS` and `/admin/` does not resolve.
+Every configuration surface is in the app under `/settings/<section>/` — drops, categories,
+spec fields, guidance cards, the workflow and the team — each a partial under
+`partials/settings/`, dual-rendered by `_settings_render`. This is a deliberate deviation from
+spec §5/§6/§10, which name admin; the intent (a non-developer can change it without a deploy)
+is better served in the app. `manage.py createsuperuser` is the only bootstrap into a fresh
+database, so do not remove `django.contrib.auth`.
 
 ## Rules that are easy to break
 
@@ -80,7 +91,12 @@ still written against the version on screen; the feed only reads across all of t
   `create_design` / `update_design`. Re-filing a design to another drop or category never
   recalculates the code.
 - **Nothing is ever deleted.** `on_delete=PROTECT` throughout, no delete views, admin delete disabled on Design/Version/Comment.
-- **No roles.** Any user may do anything, including approving their own design. Do not add a permission system — instead, self-approval is stored as `StatusTransition.is_self_approval` and displayed in the trail.
+- **No roles.** Any user may do anything, including approving their own design and editing
+  every settings screen. Do not add a permission system — instead, self-approval is stored as
+  `StatusTransition.is_self_approval` and displayed in the trail. `is_staff` / `is_superuser`
+  survive as Django columns but nothing reads them.
+- **The last active account cannot be deactivated.** With no admin to recover from, that would
+  lock the whole team out. `deactivate_teammate` refuses it.
 - **No AI/LLM calls.** The app never talks to a model API. External editing happens by hand, in tools described by admin-editable `GuidanceCard` rows.
 
 ## Storage
