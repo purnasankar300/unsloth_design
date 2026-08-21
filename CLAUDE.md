@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Selvedge — an internal Django app for a 5–6 person garment design team in India. A **versioned image collaboration tool with a status pipeline**: reference photo → guided external editing → upload the result as a new version → comments → revisions → approval. It ends at "approved"; post-approval production tracking lives in a different application.
+Unsloth Design — an internal Django app for a 5–6 person garment design team in India. A **versioned image collaboration tool with a status pipeline**: reference photo → guided external editing → upload the result as a new version → comments → revisions → approval. It ends at "approved"; post-approval production tracking lives in a different application.
 
 `REQUIREMENTS.md` is the frozen V1 spec and remains the source of truth. Section 11 is marked "Do Not Relitigate". `index.html` is the current approved wireframe and the visual reference the UI is ported from; `mockup.html` is the earlier one it superseded. Neither is wired to the app — keep both, port from `index.html`.
 
@@ -100,6 +100,18 @@ database, so do not remove `django.contrib.auth`.
 - **The last active account cannot be deactivated.** With no admin to recover from, that would
   lock the whole team out. `deactivate_teammate` refuses it.
 - **No AI/LLM calls.** The app never talks to a model API. External editing happens by hand, in tools described by `GuidanceCard` rows the team edits under Settings.
+
+## Brand
+
+`docs/logo.png` is the original artwork and is not served. `static/img/` holds
+three transparent derivatives — the sign-in lockup, the topbar mark (inverted in
+CSS, because the artwork is black and the topbar is ink) and the watermark. The
+watermark is a fixed, `pointer-events: none` `body::before` at 4% opacity; the
+sloth alone, never the wordmark.
+
+**The app is named Unsloth Design; the infrastructure is still named
+`selvedge`** — database, bucket, Linux user, systemd unit, backup prefix. That
+split is deliberate: renaming them means recreating a database and a bucket.
 
 ## Storage
 

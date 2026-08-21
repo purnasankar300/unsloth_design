@@ -1,6 +1,6 @@
 # Application
 
-Selvedge is a **versioned image collaboration tool with a status pipeline**. A
+Unsloth Design is a **versioned image collaboration tool with a status pipeline**. A
 reference photo goes in, the team edits it by hand in external tools, uploads
 each result as a new version, comments on specific versions, and eventually
 approves one. It ends at "approved" — production tracking lives elsewhere.
@@ -132,6 +132,29 @@ Inside the drawer:
 All three also render as ordinary pages (`/guidance/`, `/settings/<section>/`,
 `/designs/<code>/assets/`) when JavaScript is off. The settings page template
 *includes* the same modal partial, so the two cannot drift.
+
+### Brand assets
+
+`docs/logo.png` is the original artwork, 1536×1024 on white, and is **not**
+served. Three derivatives live in `static/img/`, made by thresholding the white
+paper to transparent and trimming to the ink:
+
+| File | Where it is used |
+|---|---|
+| `unsloth-logo.png` (900×476) | The sign-in page lockup |
+| `unsloth-mark.png` (160×88) | The topbar, `filter: invert(1)` because the artwork is black and the bar is ink |
+| `unsloth-watermark.png` (638×351) | The page watermark — the sloth alone, since repeating the wordmark behind a page that already shows it reads as a mistake |
+
+The watermark is a fixed `body::before` at 4% opacity: `pointer-events: none`, so
+it never intercepts a click, and everything readable is lifted above it with
+`z-index: 1`. On the sign-in page it drops to 5% and moves below the card rather
+than behind it.
+
+> **The app is called Unsloth Design; the infrastructure is still called
+> `selvedge`.** The database, the R2/MinIO bucket, the Linux user, the systemd
+> unit and the backup key prefix all keep that name. Renaming them means
+> recreating a database and a bucket for a cosmetic gain, so it has not been
+> done — do not "fix" one of them in isolation.
 
 ### JavaScript
 `static/js/app.js`, about 70 lines, is the only hand-written JS. It opens the

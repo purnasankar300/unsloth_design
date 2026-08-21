@@ -1,4 +1,4 @@
-# Deploying Selvedge
+# Deploying Unsloth Design
 
 Target: a single Ubuntu 24.04 VPS, PostgreSQL on Neon, images on Cloudflare R2.
 Estimated running cost is around ₹1,100/month.
@@ -67,7 +67,7 @@ turns on HSTS, secure cookies and the SSL redirect.
 
 ```ini
 [Unit]
-Description=Selvedge
+Description=Unsloth Design
 After=network.target
 
 [Service]

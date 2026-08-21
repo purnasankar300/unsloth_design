@@ -1,10 +1,12 @@
 {% extends "base_bare.html" %}
-{% block title %}Sign in · Selvedge{% endblock %}
+{% block title %}Sign in · Unsloth Design{% endblock %}
 
+{% load static %}
 {% block content %}
 <div class="login">
   <div class="brandline">
-    <b>Selvedge</b>
+    <img class="brandlogo" src="{% static 'img/unsloth-logo.png' %}"
+         alt="Unsloth Design" width="220" height="116">
     <div class="eyebrow">Garment design tracker</div>
   </div>
 

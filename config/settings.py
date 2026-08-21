@@ -1,4 +1,4 @@
-"""Settings for Selvedge, the garment design tracker.
+"""Settings for Unsloth Design, the garment design tracker.
 
 Development and production differ only by environment variables: the same code
 talks to Postgres-in-Docker + MinIO locally and to Neon + Cloudflare R2 in

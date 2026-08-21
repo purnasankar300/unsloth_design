@@ -1,4 +1,4 @@
-# Running Selvedge locally
+# Running Unsloth Design locally
 
 Everything below assumes the repository root as the working directory. Nothing
 here touches a production service — Postgres and object storage both run in

@@ -1,4 +1,4 @@
-# Selvedge documentation
+# Unsloth Design documentation
 
 | Doc | What it covers |
 |---|---|

@@ -1,4 +1,5 @@
 {% extends "base_bare.html" %}
+{% load static %}
 
 {% comment %} The signed-in shell: the bare page plus the topbar and the overlay shells.
    Search lives on the board with the other two filters, not up here. {% endcomment %}
@@ -6,7 +7,8 @@
 {% block chrome %}
 <header class="topbar">
   <a class="brand" href="{% url 'design-list' %}">
-    <b>Selvedge</b><span>DESIGN BOARD</span>
+    <img class="brand-mark" src="{% static 'img/unsloth-mark.png' %}" alt="" width="34" height="19">
+    <b>Unsloth</b><span>DESIGN</span>
   </a>
 
   <div class="topbar-spacer"></div>
