@@ -1,13 +1,23 @@
 # Database
 
 PostgreSQL 16. One Django app, `designs`, so every table below is `designs_*`
-except the Django built-ins (`auth_user`, `django_session`, …).
+except `auth_user`, which the app manages under Settings → Team, and the other
+Django built-ins (`django_session`, …).
+
+> `django_admin_log` may still exist in an older database. `django.contrib.admin`
+> was removed and nothing writes to it; it is left in place rather than dropped,
+> because a destructive migration in this codebase would be the exception that
+> proves nothing else is.
 
 Two rules govern the whole schema:
 
 - **Nothing is ever deleted.** Every foreign key that points at real work is
-  `ON DELETE PROTECT`. There are no delete views, and retiring is always `is_active = False` for
-  Design, Version and Comment. Retiring something is a boolean, not a `DELETE`.
+  `ON DELETE PROTECT`, and there are no delete views. Taking a *reference* row out
+  of circulation — a drop, a category, a spec value, a stage, a teammate — sets
+  `is_active = false`; it is a boolean, never a `DELETE`. Designs, versions and
+  comments have no retire flag at all: they simply stay.
+  `AllowedTransition` is the single exception, and the reason is in its own
+  section below.
 - **Postgres stores keys, never image bytes.** Images live in Cloudflare R2
   (MinIO locally). See [Storage](#storage-keys) below.
 
@@ -37,6 +47,11 @@ erDiagram
     SpecOption ||--o{ DesignSpec : ""
 
     GuidanceCard ||--o{ GuidanceStep : "ordered steps"
+
+    User ||--o{ Design : "created_by"
+    User ||--o{ Version : "created_by"
+    User ||--o{ Comment : "author"
+    User ||--o{ StatusTransition : "actor"
 ```
 
 Three groups:
@@ -46,14 +61,18 @@ Three groups:
 | **Reference data** | `season`, `category`, `status`, `allowedtransition`, `specfield`, `specoption`, `guidancecard`, `guidancestep` | The team, under Settings in the app. Seeded by migrations `0002` and `0004`. |
 | **The work** | `design`, `version`, `comment`, `designspec`, `measurement`, `statustransition` | The application, only through `designs/services.py`. |
 | **History** | `historicaldesign`, `historicalversion`, `historicalcomment`, `historicalmeasurement`, `historicaldesignspec` | `django-simple-history`, automatically. Never written by hand. |
+| **People** | `auth_user` | The team, under Settings → Team. First account from `manage.py createsuperuser`. |
 
 ---
 
 ## Reference data
 
 ### `designs_season`
-A selling season — labelled **Drop** in the UI, via `verbose_name` on the
-`Design.season` FK. Its `code` is the first segment of every design code.
+A selling season — labelled **Drop** everywhere in the UI, via
+`verbose_name="Drop"` on the `Design.season` FK, which is the single lever that
+relabels forms without the string being typed twice. The model, the field name
+and the code segment stay `season`. Edited under **Settings → Drops**.
+Its `code` is the first segment of every design code.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -64,7 +83,8 @@ A selling season — labelled **Drop** in the UI, via `verbose_name` on the
 
 ### `designs_category`
 A garment category. Its `code` is the second segment of every design code.
-Same shape as Season: `code` (unique), `label`, `is_active`.
+Same shape as Season: `code` (unique), `label`, `is_active`. Edited under
+**Settings → Categories**.
 
 ### `designs_status`
 A workflow stage. **Spec §9 is still open**, so the seeded names are placeholders
@@ -97,6 +117,11 @@ illegal** — `services.change_status` refuses anything not listed.
 Constraints: `unique_transition_pair`, and `transition_changes_status`
 (a status cannot transition to itself). 16 pairs seeded.
 
+This is **the one table the application really deletes from.** A move has no
+`is_active` column because the absence of the row *is* the meaning, so
+`services.set_transitions` clears a stage's outbound rows and writes the ticked
+set again. No design data is touched. Edited under **Settings → Workflow**.
+
 ### `designs_specfield`
 One row of the design specification grid — the kind of attribute a garment is
 described by. Works exactly like Status: **no field label appears in Python or
@@ -110,8 +135,11 @@ in a template.**
 | `show_on_card` | bool | Render this value as a chip on the board card. Four or so is the useful maximum. |
 | `is_active` | bool | |
 
-15 fields with 118 options seeded in `0004_seed_spec_fields.py`. Season and Category are
-deliberately **not** spec fields — they are structural, they make up the code.
+15 fields with 118 options seeded in `0004_seed_spec_fields.py`. Fields are added,
+renamed, reordered and retired under **Settings → Specification**; the code is
+slugified from the label when the field is created and then frozen, because URLs
+and form posts key off it. The drop and the category are deliberately **not** spec
+fields — they are structural, they make up the code.
 
 ### `designs_specoption`
 A permitted value for one spec field.
@@ -130,6 +158,23 @@ Constraint: `unique_option_label_per_field`.
 The external editing tools and how to use them. Presentational only — **the
 application never calls a model API** (spec §1). Card: `name`, `url`, `summary`,
 `order`, `is_active`. Step: `card_id` (CASCADE), `order`, `text`.
+
+Edited under **Settings → Guidance cards**, where the steps are one textarea line
+each and are replaced wholesale on save — hence the `CASCADE` and the only place
+in the schema where child rows are routinely rewritten.
+
+### `auth_user`
+Django's own table, but the application manages it now that there is no admin:
+**Settings → Team** adds a member, resets a password and takes access away.
+
+There are **no roles** (spec §3) — every account can do everything, settings
+included. `is_staff` and `is_superuser` still exist as columns because Django
+defines them, but nothing in the application reads them. Removing someone sets
+`is_active = false`; nobody is ever deleted, and `PROTECT` from `design`,
+`version`, `comment` and `statustransition` would refuse it anyway.
+`services.deactivate_teammate` also refuses to deactivate the **last** active
+account — with no admin to recover from, that would lock the team out of their
+own database.
 
 ### `designs_designcodesequence`
 The per-season-per-category counter behind design codes. One row per bucket,
@@ -150,7 +195,7 @@ A garment idea, tracked from reference photo to approval.
 | `id` | **uuid** PK | Used in storage keys, so it must not be guessable from a name |
 | `code` | varchar(32) **unique**, not editable | `{season}-{category}-{NNN}`, e.g. `SS26-KURTA-003`. **This is the identity.** |
 | `name` | varchar(140) | A label on top of the code. Names get renamed and duplicated; codes must not. |
-| `season_id` → Season | PROTECT | |
+| `season_id` → Season | PROTECT | Reads as **Drop** in every form and label |
 | `category_id` → Category | PROTECT | |
 | `status_id` → Status | PROTECT | Current stage |
 | `logo_file` | file | **Authoritative** logo artwork. Models redraw logos, so the image is not the record. |
@@ -246,21 +291,26 @@ No history table — the row *is* the history.
 
 ## History tables
 
-`django-simple-history` mirrors five models: `historicaldesign`,
-`historicalversion`, `historicalcomment`, `historicalmeasurement`,
-`historicaldesignspec`. Each carries the original columns plus:
+`django-simple-history` mirrors five models — `designs_historicaldesign`,
+`designs_historicalversion`, `designs_historicalcomment`,
+`designs_historicalmeasurement` and `designs_historicaldesignspec`. That is 20
+`designs_*` tables in total: 15 real ones and these 5 mirrors. Each carries the
+original columns plus:
 
 - `history_id`, `history_date`, `history_type` (`+` create, `~` change, `-` delete)
 - `history_user_id` → User, `ON DELETE SET NULL`
 - `history_change_reason`
 
 The acting user is filled in by `simple_history.middleware.HistoryRequestMiddleware`
-for anything that came through a request, and set explicitly by
-`services.set_spec` for anything that did not. Foreign keys in history tables are
+for anything that came through a request, and set explicitly as `_history_user` by
+`services.set_spec`, `services.update_design` and `services.set_requirement`. Foreign keys in history tables are
 `DO_NOTHING` by design — a historical row must survive whatever happened to the
 rows it points at.
 
-They are read with the ORM (`design.history.all()`); there is no screen for them.
+They are read with the ORM (`design.history.all()`); there is no screen for them,
+which is the one thing lost when django-admin was removed. `historicalversion` is
+also where a corrected version description leaves its previous wording, and
+`historicaldesign` is where a rename or a re-file is recorded.
 
 ---
 
@@ -269,9 +319,12 @@ They are read with the ORM (`design.history.all()`); there is no screen for them
 Postgres holds keys, never bytes. Keys are **opaque and immutable**:
 
 ```
-designs/{design_uuid}/versions/{version_uuid}.ext
-designs/{design_uuid}/versions/{version_uuid}-thumb.jpg
+designs/{design_id}/versions/{version_id}{ext}        # IMAGE_KEY
+designs/{design_id}/versions/{version_id}-thumb.jpg   # THUMBNAIL_KEY
 ```
+
+Both are built in `designs/storage.py`; the thumbnail is always JPEG whatever the
+original was.
 
 Never derived from a design name or an uploaded filename — names change and
 leak information. The bucket is **private**; templates link to the
@@ -288,6 +341,7 @@ expires (600 s by default). An unsigned or expired URL returns 403.
 | `0002_seed_reference_data` | 6 statuses, 16 legal transitions, 2 guidance cards. Reversible. |
 | `0003_spec_models` | `specfield`, `specoption`, `designspec`, `historicaldesignspec` |
 | `0004_seed_spec_fields` | 15 spec fields, 118 options, with colour hexes. Reversible. |
+| `0005_alter_design_season…` | `verbose_name="Drop"` on `Design.season` and its historical mirror. Labels only — **no SQL**. |
 
 The seeds are a starting point, not a decision. Everything they insert is
 editable under Settings without a migration or a code change.

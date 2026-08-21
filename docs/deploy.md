@@ -93,10 +93,29 @@ certbot.
 
 ## 4. Users
 
-Five or six accounts. The first comes from `manage.py createsuperuser`; the rest are added
-in the app under Settings → Team. There are **no roles** — any user
-can do anything, including approving their own design. That is deliberate for a
-team this size, and self-approval is recorded and displayed as such.
+Five or six accounts. The first one comes from `manage.py createsuperuser` on the
+box; every account after it is added in the app under **Settings → Team**. There
+is no django-admin and no self-signup, so guard that first account — it is the
+only way into an empty database.
+
+There are **no roles** — any user can do anything, including approving their own
+design and changing any setting. That is deliberate for a team this size:
+self-approval is recorded and displayed as such rather than prevented. The app
+refuses to deactivate the last active account, which is the only thing standing
+between a mis-click and a locked-out team.
+
+## 4b. First-run checklist
+
+A fresh deployment has the seeded configuration and nothing else. Before anyone
+can create a design:
+
+1. Sign in as the first account.
+2. Gear → **Drops**: add the current one, e.g. `SS26`.
+3. Gear → **Categories**: add the ones you actually make.
+4. Gear → **Workflow**: settle the stage names and the legal moves — spec §9 is
+   still open, and the seeded six are placeholders.
+5. Gear → **Team**: add the rest of the team.
+6. Gear → **Guidance cards**: point them at the editing tools you really use.
 
 ## 5. Backups
 

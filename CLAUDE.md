@@ -63,7 +63,7 @@ database, so do not remove `django.contrib.auth`.
 
 ## Rules that are easy to break
 
-- **Statuses are data, not code.** No status name appears anywhere in Python or templates. Behaviour keys off `Status.is_approval` / `is_terminal` / `is_initial`. Section 9 of the spec is still open, so the names in the seed migration are placeholders and the team may rename them in admin at any time — a `code == "approved"` check would break silently when they do. There is a test (`test_no_status_name_is_hardcoded`) guarding this.
+- **Statuses are data, not code.** No status name appears anywhere in Python or templates. Behaviour keys off `Status.is_approval` / `is_terminal` / `is_initial`. Section 9 of the spec is still open, so the names in the seed migration are placeholders and the team may rename them under Settings → Workflow at any time — a `code == "approved"` check would break silently when they do. There is a test (`test_no_status_name_is_hardcoded`) guarding this.
 - **The reference image is version 1**, a `Version` with `parent=None`. There is no separate reference field on `Design`. This is a deliberate reading of spec §6: one image table, one upload path, and "branch from the original" is an ordinary parent assignment.
 - **Versions form a tree.** Users must be able to re-branch from the reference because externally edited images degrade over successive rounds. `Version.depth_from_reference` is what surfaces that degradation in the UI.
 - **Spec fields are data too.** The design specification grid (`SpecField` / `SpecOption` /
@@ -75,7 +75,7 @@ database, so do not remove `django.contrib.auth`.
 - **Retiring an option is `is_active = False`.** Never a delete. Designs already carrying a
   value keep it, `spec_choices` still offers it to them, and new designs stop seeing it.
 - **`Version.number` is 1-based; the UI is not.** The reference renders as `REF` and later
-  versions as `v1`, `v2` via `Version.display_label`. The database, the admin and the audit
+  versions as `v1`, `v2` via `Version.display_label`. The database and the audit
   trail keep `v{number}`. Use `display_label` in templates and `number` in URLs.
 - **`{# #}` is single-line only.** Django does not close a `{# #}` across a newline, so a
   multi-line one renders as literal text on the page. Multi-line notes use
@@ -85,19 +85,21 @@ database, so do not remove `django.contrib.auth`.
   every version, but the composer always posts against the version on screen.
 - **A season is called a "Drop" in the UI.** The model, the field name `season` and the first
   segment of the design code stay `Season`; the label comes from `verbose_name="Drop"` on the
-  `Design.season` FK, so forms and the Design admin follow it without any string being typed
-  twice. The Season model itself is still "Season" in admin.
+  `Design.season` FK, so every ModelForm follows it without the string being typed twice.
 - **A design's name is optional and its code is not.** A blank name falls back to the code in
   `create_design` / `update_design`. Re-filing a design to another drop or category never
   recalculates the code.
-- **Nothing is ever deleted.** `on_delete=PROTECT` throughout, no delete views, admin delete disabled on Design/Version/Comment.
+- **Nothing is ever deleted.** `on_delete=PROTECT` throughout and no delete views. Taking a
+  reference row out of circulation — a drop, a category, a spec value, a stage, a teammate —
+  is `is_active = False`. The one real delete is `services.set_transitions`, because an
+  `AllowedTransition` has no active flag: the absence of the row *is* the meaning.
 - **No roles.** Any user may do anything, including approving their own design and editing
   every settings screen. Do not add a permission system — instead, self-approval is stored as
   `StatusTransition.is_self_approval` and displayed in the trail. `is_staff` / `is_superuser`
   survive as Django columns but nothing reads them.
 - **The last active account cannot be deactivated.** With no admin to recover from, that would
   lock the whole team out. `deactivate_teammate` refuses it.
-- **No AI/LLM calls.** The app never talks to a model API. External editing happens by hand, in tools described by admin-editable `GuidanceCard` rows.
+- **No AI/LLM calls.** The app never talks to a model API. External editing happens by hand, in tools described by `GuidanceCard` rows the team edits under Settings.
 
 ## Storage
 

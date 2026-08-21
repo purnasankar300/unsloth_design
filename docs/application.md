@@ -37,7 +37,7 @@ Supporting modules:
 | `imaging.py` | The single upload pipeline: validate it is an image, SHA-256 it, read dimensions, generate a thumbnail. |
 | `storage.py` | Opaque key construction and short-lived signed URLs. |
 | `insights.py` | The §10 instrumentation, rendered at `/insights/`. |
-| `forms.py` | `NewDesignForm`, `NewVersionForm`, `CommentForm`, `AssetsForm`, `MeasurementFormSet`. |
+| `forms.py` | `NewDesignForm` (spec fields built from the table at runtime), `NewVersionForm`, `CommentForm`, `DesignHeaderForm`, `AssetsForm`, `MeasurementFormSet`. |
 
 
 ---
@@ -63,6 +63,21 @@ Everything that writes more than one table:
 | `retire_spec_option(option, actor)` | `is_active = False`. Never deletes. |
 | `spec_choices(design=None)` | `[(field, options, current), …]` for the grid. A design holding a since-retired value keeps that value in its own list, so opening the drawer never silently drops what someone chose. |
 
+### Configuration services
+
+What django-admin used to do. Single-table writes, but they live here for the
+same reason the rest does: one place knows the invariants.
+
+| Function | Does |
+|---|---|
+| `add_drop` / `update_drop` / `retire_drop` / `restore_drop` | A selling season. The code is typed, uppercased and unique; renaming never touches it, because every design code carries it. |
+| `add_category` / `update_category` / `retire_category` / `restore_category` | The same, for the second code segment. |
+| `add_spec_field` / `update_spec_field` / `retire_spec_field` / `restore_spec_field` | The attributes a garment is described by. The code is slugified from the label at creation and then frozen. |
+| `save_guidance_card(card=None, …)` / `retire_guidance_card` / `restore_guidance_card` | Create or rewrite one external-tool card. Steps are replaced wholesale from a textarea, one per line. Retiring hides it from the sparkle modal; the card itself stays. |
+| `add_status` / `update_status` / `retire_status` / `restore_status` | Workflow stages — spec §9 answered as data. Setting `is_initial` clears it elsewhere, because `only_one_initial_status` is a database constraint. |
+| `set_transitions(status, targets, actor)` | Rewrites the legal moves out of one stage. **The only service that really deletes rows** — an `AllowedTransition` has no active flag, so absence is the meaning. |
+| `add_teammate` / `set_teammate_password` / `deactivate_teammate` / `reactivate_teammate` | The team. No roles. Deactivating the **last** active account is refused — with no admin, that would lock everyone out. |
+
 ---
 
 ## The UI
@@ -77,8 +92,10 @@ spec chips, the status stamp and a comment count.
 
 - **Thumbnails only.** Lists never request a full-size image — both a
   performance and an egress-cost requirement.
-- The filter rail is built from the `Status` table. No status name is written in
-  the template.
+- The filter rail is one GET form holding three controls — search, a Status
+  dropdown and a Category dropdown — so they compose into one querystring. Both
+  dropdowns are built from their tables; no status or category name is written
+  in the template.
 - Search covers the name, the code and **every specification value**, so
   "cotton" or "240" finds designs.
 
@@ -112,8 +129,9 @@ Inside the drawer:
   workflow and the team. Six sections in one modal; this is what replaced django-admin.
 - **Assets Edit** → the authoritative assets form, so editing them never leaves the drawer.
 
-All three also render as ordinary pages (`/guidance/`, `/spec-options/`,
-`/designs/<code>/assets/`) when JavaScript is off.
+All three also render as ordinary pages (`/guidance/`, `/settings/<section>/`,
+`/designs/<code>/assets/`) when JavaScript is off. The settings page template
+*includes* the same modal partial, so the two cannot drift.
 
 ### JavaScript
 `static/js/app.js`, about 70 lines, is the only hand-written JS. It opens the
@@ -138,13 +156,17 @@ is load-bearing** — every URL it touches renders as a page on its own.
 | `/designs/<code>/status/` | `status-change` | POST |
 | `/designs/<code>/assets/` | `assets-edit` | Authoritative assets + measurements. Modal for htmx, page otherwise |
 | `/designs/<code>/specs/` | `spec-set` | POST one field + option |
-| `/settings/`, `/settings/<section>/` | `settings`, `settings-section` | Drops, categories, spec fields, guidance, workflow, team. Modal or page |
-| `/settings/spec-fields/<field>/options/` | `spec-options-field` | One field's value list |
-| `/insights/` | `insights` | The §10 numbers. Was an admin page |
+| `/settings/` | `settings` | Redirects to the first section |
+| `/settings/<section>/` | `settings-section` | `drops`, `categories`, `spec-fields`, `guidance`, `workflow`, `team`. Modal for htmx, page otherwise |
+| `/settings/spec-fields/<field>/options/` | `spec-options-field` | One field's value list — the drawer links straight here |
+| `/settings/<thing>/add/` | `drop-add`, `category-add`, `spec-field-add`, `status-add`, `teammate-add`, `guidance-save` | POST |
+| `/settings/<thing>/<pk>/save/` | `drop-save`, `category-save`, `spec-field-save`, `status-save`, `guidance-card-save` | POST |
+| `/settings/<thing>/<pk>/toggle/` | `drop-toggle`, `category-toggle`, `spec-field-toggle`, `guidance-toggle`, `status-toggle`, `teammate-toggle` | POST. Retires or restores, depending which way the row is |
 | `/settings/spec-fields/<field>/options/add/` | `spec-option-add` | POST |
 | `/settings/spec-options/<pk>/retire/` | `spec-option-retire` | POST |
-| `/settings/<thing>/add/`, `/<pk>/save/`, `/<pk>/toggle/` | `drop-*`, `category-*`, `spec-field-*`, `guidance-*`, `status-*`, `teammate-*` | POST. `toggle` retires or restores |
 | `/settings/workflow/<pk>/moves/` | `status-moves` | POST the legal moves out of one stage |
+| `/settings/team/<pk>/password/` | `teammate-password` | POST |
+| `/insights/` | `insights` | The §10 numbers. Was an admin page |
 | `/guidance/` | `guidance-modal` | Modal or page |
 | `/images/<uuid>/` | `version-image` | 302 → signed URL |
 | `/images/<uuid>/thumb/` | `version-thumbnail` | 302 → signed URL |
@@ -154,7 +176,10 @@ Every POST answers the way it was asked: an htmx caller gets the re-rendered
 drawer plus a toast, a plain form post gets a redirect with a Django message.
 
 Authentication is global — `LoginRequiredMiddleware`, no per-view decorators, no
-anonymous access.
+anonymous access. `/login/` and `/logout/` are the only routes outside
+`designs/urls.py`; **there is no `/admin/`.** The signed-out pages extend
+`templates/base_bare.html`, which is `base.html` without the topbar and the
+overlay shells.
 
 ---
 
@@ -178,8 +203,12 @@ anonymous access.
   and changing any setting. Do not add a permission system — self-approval is
   stored on the transition and shown in the trail.
 - **No django-admin.** Configuration lives under `/settings/`. A deliberate
-  deviation from spec §5/§6/§10; `manage.py createsuperuser` is the only
-  bootstrap into an empty database.
+  deviation from spec §5/§6/§10, recorded in `REQUIREMENTS.md` §11b;
+  `manage.py createsuperuser` is the only bootstrap into an empty database.
+- **A drop is a Season.** "Drop" is the UI label, set once by `verbose_name` on
+  the `Design.season` FK. The model, the field and the code segment stay `season`.
+- **`{# #}` is single-line only.** Django will not close one across a newline, so
+  a multi-line comment renders as text on the page. Use `{% comment %}`.
 - **No AI/LLM calls**, ever.
 - **`Version.number` is 1-based; the UI is not.** Use `display_label` in
   templates, `number` in URLs.
@@ -230,7 +259,15 @@ via API — a ₹6,500–34,000/month decision that is guesswork without real da
   concurrency (needs Postgres — SQLite has no `SELECT … FOR UPDATE`).
 - `test_specs.py` — spec values, retired options, and the no-hardcoded-labels guard.
 - `test_views.py` — access control, signed-URL delivery, thumbnails-only, the
-  board, the drawer-vs-page split, and the full core loop end to end.
+  board and its three composing filters, the drawer-vs-page split, and the full
+  core loop end to end.
+- `test_editing.py` — the login page carrying no chrome, the optional name and
+  the specs chosen at creation, the merged activity feed (including an
+  `assertNumQueries` guard on it), the in-drawer editors, and a template-hygiene
+  test that fails on any multi-line `{# #}` comment.
+- `test_settings.py` — that `/admin/` is gone, every settings section rendering
+  both ways, and the invariants admin used to give for free: one initial status,
+  retiring instead of deleting, and refusing to deactivate the last account.
 
 ---
 

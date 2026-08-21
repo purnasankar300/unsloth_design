@@ -79,7 +79,9 @@ MinIO console: <http://127.0.0.1:9001> — user `selvedge`, password
 
 This also seeds the reference data: 6 placeholder statuses with their 16 legal
 transitions, 15 specification fields with their option lists, and 2 guidance
-cards. All of it is editable afterwards under **Settings** in the app.
+cards. All of it is editable afterwards under **Settings** in the app — the gear
+icon in the top bar. None of it is demo data; a fresh database starts with the
+configuration and no designs, drops or categories.
 
 ### 5. The first user
 
@@ -127,10 +129,10 @@ docker compose down -v                  # DESTROY the database and the bucket
 .venv/bin/python manage.py runserver
 .venv/bin/python manage.py migrate
 .venv/bin/python manage.py makemigrations designs
-.venv/bin/python manage.py createsuperuser
+.venv/bin/python manage.py createsuperuser    # only for the FIRST account
 .venv/bin/python manage.py shell
 
-.venv/bin/python manage.py test designs                      # 76 tests
+.venv/bin/python manage.py test designs                      # 101 tests
 .venv/bin/python manage.py test designs.tests.test_specs     # one module
 .venv/bin/python manage.py test designs.tests.test_domain.StatusTests.test_self_approval_is_permitted_but_flagged
 
@@ -155,12 +157,15 @@ development data.
    degrading.
 5. Comment on the version on screen. Comments belong to that image, not to the
    design.
-6. Fill in the **Design specification** dropdowns. **Gear button** → add or
-   retire values on any field.
+6. Fill in the **Design specification** dropdowns. **Gear button → Specification**
+   adds an attribute or a value to any field.
 7. Move the status from the dropdown in the drawer head. Only legal moves are
-   offered.
+   offered — **Gear → Workflow** is where those moves are defined.
 8. Approving marks one version final. Approving your own design is allowed and
-   is flagged in the audit trail.
+   is flagged in the activity feed.
+9. The drawer's right column is one **activity feed** — uploads, comments and
+   status moves for the whole design, oldest first. The pencil by the title
+   renames or re-files the design; the code never changes.
 
 ---
 
@@ -184,8 +189,20 @@ storage-init` and check its log.
 **`DJANGO_SECRET_KEY` KeyError on startup**
 `.env` is missing. Copy `.env.example`.
 
-**"Add at least one drop and one category under Settings first"** — the gear icon
-Exactly that — see step 6.
+**"Add at least one drop and one category under Settings first"**
+Exactly that. Gear icon → **Drops**, then **Categories**. A design code is
+`{DROP}-{CATEGORY}-{NNN}`, so neither can be missing. This is the normal state of
+a brand-new database.
+
+**Nobody can sign in / the users table is empty**
+`manage.py createsuperuser`. There is no django-admin, so this is the only way
+back in; every account after the first is added under Gear → **Team**. The app
+also refuses to deactivate the last active account, so you should never get here
+by accident.
+
+**`/admin/` returns 404**
+Correct. `django.contrib.admin` was removed — everything it did is under
+`/settings/`. See `REQUIREMENTS.md` §11b.
 
 **`test_parallel_allocation_produces_unique_codes` errors**
 That test needs Postgres row locking. It cannot pass on SQLite. Run the suite
