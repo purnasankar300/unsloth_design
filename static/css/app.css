@@ -56,7 +56,7 @@ body::before{
   content:"";
   position:fixed;inset:0;z-index:0;pointer-events:none;
   background:url("../img/unsloth-watermark.png") no-repeat center 44%;
-  background-size:min(560px,52vw) auto;
+  background-size:min(388px,44vw) auto;
   opacity:.04;
 }
 /* Everything the user actually reads sits above it. */
@@ -599,12 +599,12 @@ select.control{cursor:pointer;padding-right:26px;min-width:150px}
 .login{max-width:340px;margin:12vh auto 0}
 /* The sign-in page already leads with the lockup, so the watermark drops back
    and moves out from behind the card rather than sitting under it. */
-body:has(.login)::before{opacity:.05;background-position:center 78%;background-size:min(420px,44vw) auto}
+body:has(.login)::before{opacity:.05;background-position:center 78%;background-size:min(320px,38vw) auto}
 .brandline{text-align:center;margin-bottom:18px}
 .brandline b{font-size:19px;font-weight:800;letter-spacing:-.015em;display:block}
 .brandlogo{
-  width:220px;height:auto;display:block;margin:0 auto 10px;
-  max-width:70vw;
+  width:260px;height:auto;display:block;margin:0 auto 12px;
+  max-width:76vw;
 }
 .crumb{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink-faint);margin-bottom:12px}
 .crumb a{color:inherit}

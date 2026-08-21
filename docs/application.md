@@ -135,15 +135,27 @@ All three also render as ordinary pages (`/guidance/`, `/settings/<section>/`,
 
 ### Brand assets
 
-`docs/logo.png` is the original artwork, 1536×1024 on white, and is **not**
-served. Three derivatives live in `static/img/`, made by thresholding the white
-paper to transparent and trimming to the ink:
+`docs/logo.png` is the original artwork — 1536×1024, a horizontal lockup reading
+**UNSLOTH & CO** on white — and is **not** served. Three derivatives live in
+`static/img/`, made by thresholding the white paper to transparent and cropping
+on measured column gutters:
 
 | File | Where it is used |
 |---|---|
-| `unsloth-logo.png` (900×476) | The sign-in page lockup |
-| `unsloth-mark.png` (160×88) | The topbar, `filter: invert(1)` because the artwork is black and the bar is ink |
-| `unsloth-watermark.png` (638×351) | The page watermark — the sloth alone, since repeating the wordmark behind a page that already shows it reads as a mistake |
+| `unsloth-logo.png` (900×213) | The sign-in page lockup |
+| `unsloth-mark.png` (160×116) | The topbar, `filter: invert(1)` because the artwork is black and the bar is ink |
+| `unsloth-watermark.png` (388×281) | The page watermark — the sloth alone, since repeating the wordmark behind a page that already shows it reads as a mistake |
+
+**"& CO" is cropped off** on request. The cut is not eyeballed: scanning the
+source for vertical gutters gives the icon at x 35–421, a 104 px gap, the
+wordmark at 525–1219, then `&` at 1253 and `CO` at 1344. The lockup is cut at
+1219 and the icon at 421. If the artwork is ever replaced, re-measure — the
+derivatives do not regenerate themselves, and the `width`/`height` attributes in
+`base.html` and `login.html` have to follow the new aspect ratio or the browser
+reserves the wrong box.
+
+The watermark is only 388 px wide at source, so `background-size` stays under
+that; asking for more upscales it.
 
 The watermark is a fixed `body::before` at 4% opacity: `pointer-events: none`, so
 it never intercepts a click, and everything readable is lifted above it with
