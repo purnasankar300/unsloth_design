@@ -1,0 +1,52 @@
+{% extends "base_bare.html" %}
+
+{# The signed-in shell: the bare page plus the topbar and the overlay shells.
+   Search lives on the board with the other two filters, not up here. #}
+
+{% block chrome %}
+<header class="topbar">
+  <a class="brand" href="{% url 'design-list' %}">
+    <b>Selvedge</b><span>DESIGN BOARD</span>
+  </a>
+
+  <div class="topbar-spacer"></div>
+
+  {% if user.is_authenticated %}
+    <button class="iconbtn accent" title="How to edit outside the app"
+            hx-get="{% url 'guidance-modal' %}" hx-target="#modal-body" hx-swap="innerHTML">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 16l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>
+      </svg>
+    </button>
+    <button class="iconbtn" title="Manage design options"
+            hx-get="{% url 'spec-options' %}" hx-target="#modal-body" hx-swap="innerHTML">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.6 1.6 0 008 19.4a1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H2a2 2 0 110-4h.1A1.6 1.6 0 004.6 8a1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V2a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H22a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/>
+      </svg>
+    </button>
+    <div class="whoami">
+      <span class="avatar">{{ user.get_username|slice:":2"|upper }}</span>
+      <span class="who">{{ user.get_full_name|default:user.get_username }}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+        <button class="signout" type="submit">Sign out</button>
+      </form>
+    </div>
+  {% endif %}
+</header>
+{% endblock %}
+
+{% block overlays %}
+<!-- Overlay shell. The drawer and the modal are filled by htmx; without JS the
+     same URLs render as ordinary pages. -->
+<div class="scrim" id="scrim" data-close-overlays></div>
+
+<section class="drawer" id="drawer" aria-hidden="true">
+  <div id="drawer-body"></div>
+</section>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div id="modal-body"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{# Uploading is how a version is created, and choosing the parent is how the tree
+   branches. Branching back to the reference matters: externally edited images
+   degrade over successive rounds. #}
+<form id="upload" class="upload" method="post" enctype="multipart/form-data"
+      action="{% url 'version-create' design.code %}">
+  {% csrf_token %}
+
+  <div class="upload-row">
+    <label class="eyebrow" for="upload-parent">Branch from</label>
+    <select id="upload-parent" name="parent">
+      {% for version in versions %}
+        <option value="{{ version.number }}" {% if selected and version.pk == selected.pk %}selected{% endif %}>
+          {{ version.display_label }}{% if version.is_reference %} · reference, undegraded{% endif %}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="upload-row">
+    <label class="eyebrow" for="upload-image">Edited image</label>
+    <input id="upload-image" type="file" name="image" accept="image/*" required>
+  </div>
+
+  <div class="upload-row wide">
+    <label class="eyebrow" for="upload-req">What did you change?</label>
+    <textarea id="upload-req" name="requirement" rows="2"
+              placeholder="One line is enough — this is what reviewers read next to the image."></textarea>
+  </div>
+
+  <div class="upload-actions">
+    <button class="btn btn-primary" type="submit">Upload as a new version</button>
+  </div>
+</form>

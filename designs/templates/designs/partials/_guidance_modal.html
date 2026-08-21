@@ -1,0 +1,36 @@
+{# Editing happens outside this application — it never talks to a model API.
+   These cards are admin-editable content, nothing more. #}
+<div class="modal-inner">
+  <div class="modal-head">
+    <div>
+      <h3>Edit outside the app</h3>
+      <p>Take the image to one of these tools, then come back and upload the result as a new version.</p>
+    </div>
+    <button class="modal-x" type="button" data-close-overlays>&times;</button>
+  </div>
+
+  <div class="modal-body" style="grid-template-columns:1fr">
+    <div class="modal-main">
+      <div class="hint">
+        One change per round gives the cleanest result. Successive edits degrade the garment —
+        when that shows, branch again from the reference rather than from the last version.
+      </div>
+
+      {% for card in guidance_cards %}
+        <div class="tool">
+          <div class="tool-top">
+            <b>{{ card.name }}</b>
+            <span class="admintag">Editable in admin</span>
+            <a class="tool-link" href="{{ card.url }}" target="_blank" rel="noopener">Open {{ card.name }}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M9 7h8v8"/></svg>
+            </a>
+          </div>
+          {% if card.summary %}<div class="tool-summary">{{ card.summary }}</div>{% endif %}
+          <ol>{% for step in card.steps.all %}<li>{{ step.text }}</li>{% endfor %}</ol>
+        </div>
+      {% empty %}
+        <div class="hint">No guidance cards yet. Add them in the admin.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

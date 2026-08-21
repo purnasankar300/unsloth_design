@@ -1,0 +1,31 @@
+{% load static %}<!doctype html>
+{# The shell with no application chrome: head, body, messages, content.
+   The signed-out pages extend this directly; base.html adds the topbar and the
+   overlay shells on top of it. #}
+<html lang="en-IN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Selvedge{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+{% block chrome %}{% endblock %}
+
+{% if messages %}
+  <ul class="messages" style="max-width:1680px;margin:14px auto 0;padding:0 20px">
+    {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
+  </ul>
+{% endif %}
+
+{% block content %}{% endblock %}
+
+{% block overlays %}{% endblock %}
+</body>
+</html>

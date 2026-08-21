@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Edit outside the app · Selvedge{% endblock %}
+
+{# The guidance modal without JavaScript. #}
+{% block content %}
+<div class="wrap">
+  <div class="crumb"><a href="{% url 'design-list' %}">Design board</a> / Edit outside the app</div>
+  {% include "designs/partials/_guidance_modal.html" %}
+</div>
+{% endblock %}

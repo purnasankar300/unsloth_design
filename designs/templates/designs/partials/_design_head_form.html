@@ -1,0 +1,27 @@
+{# Name, drop and category, edited in place. The code is not here on purpose:
+   it was issued once and is the design's identity. #}
+<form class="headedit" method="post" action="{% url 'design-update' design.code %}"
+      hx-post="{% url 'design-update' design.code %}" hx-target="#drawer-body" hx-swap="innerHTML">
+  {% csrf_token %}
+  {% if selected %}<input type="hidden" name="v" value="{{ selected.number }}">{% endif %}
+
+  {% for field in header_form %}
+    <label class="ctl">
+      <span class="eyebrow">{{ field.label }}</span>
+      {{ field }}
+      {{ field.errors }}
+    </label>
+  {% endfor %}
+
+  <div class="headedit-actions">
+    <a class="btn btn-ghost" href="?{% if selected %}v={{ selected.number }}{% endif %}"
+       hx-get="?{% if selected %}v={{ selected.number }}{% endif %}"
+       hx-target="#drawer-body" hx-swap="innerHTML">Cancel</a>
+    <button class="btn btn-primary" type="submit">Save</button>
+  </div>
+
+  <p class="codelock">
+    Code {{ design.code }} was issued when the design was created and never changes,
+    even when the drop or the category does.
+  </p>
+</form>

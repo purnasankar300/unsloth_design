@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}New design · Selvedge{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <div class="formcard">
+    <div class="crumb"><a href="{% url 'design-list' %}">Design board</a> / New design</div>
+    <div class="panel">
+      <div class="panel-head"><h1>New design</h1></div>
+      <div class="panel-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ form.non_field_errors }}
+          {% for field in form.core_fields %}
+            <div class="field">
+              {{ field.label_tag }}
+              {{ field }}
+              {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+              {{ field.errors }}
+            </div>
+          {% endfor %}
+
+          {# Every value here is optional and editable later from the drawer, so
+             the whole grid starts folded away. No field label is written out —
+             the section is whatever the table holds. #}
+          <details class="specfold">
+            <summary>Specification — optional, all editable later</summary>
+            <div class="spec-grid">
+              {% for field in form.spec_fields %}
+                <div class="spec-cell">
+                  <label class="eyebrow" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field }}
+                  {{ field.errors }}
+                </div>
+              {% endfor %}
+            </div>
+          </details>
+
+          <p class="note">
+            The design code is generated from the drop and the category and cannot be changed.
+            The reference photo is locked as REF — every later version branches from it.
+          </p>
+          <div class="actions">
+            <a class="btn btn-ghost" href="{% url 'design-list' %}">Cancel</a>
+            <button class="btn btn-primary" type="submit">Create and upload reference</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

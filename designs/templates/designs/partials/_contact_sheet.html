@@ -1,0 +1,29 @@
+{# Every image in the design, reference first and set apart. The tree is still a
+   tree — re-branching is done from the upload form, which names its parent. #}
+<div class="sheet">
+  <div class="sheet-head">
+    <span class="eyebrow">Contact sheet · reference locked, edits open</span>
+    <span class="eyebrow">{{ edit_count }} edit{{ edit_count|pluralize }} · 1 reference</span>
+  </div>
+
+  <div class="sheet-strip">
+    {% for version in versions %}
+      <a class="frame {% if version.is_reference %}is-ref{% endif %}"
+         aria-current="{% if selected and version.pk == selected.pk %}true{% else %}false{% endif %}"
+         href="?v={{ version.number }}"
+         hx-get="?v={{ version.number }}" hx-target="#drawer-body" hx-swap="innerHTML" hx-push-url="true">
+        <img src="{% url 'version-thumbnail' version.pk %}" alt="{{ version.display_label }}" loading="lazy">
+        {% if version.is_approved %}<span class="frame-star" title="Approved version">●</span>{% endif %}
+        <div class="frame-lbl">{{ version.display_label }}</div>
+        <div class="frame-by">{{ version.created_by.get_username|slice:":8" }} · {{ version.created_at|date:"d M" }}</div>
+      </a>
+    {% endfor %}
+
+    <a class="frame-add" href="#upload">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+      UPLOAD
+    </a>
+  </div>
+
+  {% include "designs/partials/_upload_form.html" %}
+</div>

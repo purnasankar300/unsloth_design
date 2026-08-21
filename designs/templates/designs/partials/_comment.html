@@ -1,0 +1,11 @@
+<div class="msg">
+  <span class="avatar">{{ comment.author.get_username|slice:":2"|upper }}</span>
+  <div class="msg-body">
+    <div class="msg-top">
+      <b>{{ comment.author.get_full_name|default:comment.author.get_username }}</b>
+      <time datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"d M, H:i" }}</time>
+      {% if comment.edited_at %}<span class="msg-edited">edited</span>{% endif %}
+    </div>
+    <div class="msg-txt">{{ comment.body|linebreaksbr }}</div>
+  </div>
+</div>

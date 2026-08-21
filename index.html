@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Board — Garment Design Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#15181E;
+  --ink-soft:#4A5261;
+  --ink-faint:#8A93A3;
+  --chalk:#EDEDE7;
+  --chalk-dim:#E2E2DA;
+  --card:#FFFFFF;
+  --indigo:#33448C;
+  --indigo-dk:#232F63;
+  --indigo-wash:#EDEFF8;
+  --rule:#D6D6CD;
+  --rule-hard:#B9B9AE;
+  --st-design:#5B6472;
+  --st-review:#9A6A11;
+  --st-approved:#2C6E4B;
+  --st-hold:#7A6E5D;
+  --st-dropped:#96403F;
+  --shadow:0 1px 2px rgba(21,24,30,.06), 0 8px 24px rgba(21,24,30,.06);
+  --shadow-lift:0 2px 4px rgba(21,24,30,.08), 0 18px 44px rgba(21,24,30,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--chalk);
+  color:var(--ink);
+  font-family:'Archivo',system-ui,sans-serif;
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+
+/* ---------- shared type utilities ---------- */
+.mono{font-family:'IBM Plex Mono',monospace}
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-faint);font-weight:500;
+}
+
+/* ---------- header ---------- */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--ink);color:var(--chalk);
+  display:flex;align-items:center;gap:18px;
+  padding:0 20px;height:58px;
+}
+.brand{display:flex;align-items:baseline;gap:10px;flex-shrink:0}
+.brand b{font-size:15px;font-weight:800;letter-spacing:-.01em}
+.brand span{font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C879C;letter-spacing:.12em}
+.search{
+  flex:1;max-width:340px;position:relative;
+}
+.search input{
+  width:100%;background:#232833;border:1px solid #333A48;border-radius:2px;
+  padding:7px 10px 7px 30px;color:var(--chalk);font-size:13px;
+}
+.search input::placeholder{color:#6E7789}
+.search svg{position:absolute;left:9px;top:8px;stroke:#6E7789}
+.topbar-spacer{flex:1}
+.iconbtn{
+  width:34px;height:34px;border-radius:2px;
+  display:grid;place-items:center;
+  border:1px solid #333A48;color:var(--chalk);
+  transition:background .12s,border-color .12s;
+}
+.iconbtn:hover{background:#232833;border-color:#4A5261}
+.iconbtn.accent{background:var(--indigo);border-color:var(--indigo)}
+.iconbtn.accent:hover{background:#3D51A6}
+.whoami{
+  display:flex;align-items:center;gap:8px;padding-left:14px;
+  border-left:1px solid #333A48;height:34px;
+}
+.avatar{
+  width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;
+  font-size:10px;font-weight:700;letter-spacing:.02em;
+  background:var(--indigo);color:#fff;flex-shrink:0;
+}
+
+/* ---------- filter rail ---------- */
+.rail{
+  position:sticky;top:58px;z-index:30;
+  background:var(--chalk);border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:11px 20px;
+}
+.chipfilter{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;
+  padding:5px 11px;border:1px solid var(--rule-hard);border-radius:999px;
+  color:var(--ink-soft);background:transparent;transition:.12s;
+}
+.chipfilter:hover{border-color:var(--ink-soft)}
+.chipfilter[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--chalk)}
+.rail-count{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint)}
+
+/* ---------- board ---------- */
+.board{
+  padding:22px 20px 80px;
+  display:grid;gap:18px;
+  grid-template-columns:repeat(auto-fill,minmax(228px,1fr));
+  max-width:1680px;margin:0 auto;
+}
+
+/* ---------- design card = hangtag ---------- */
+.card{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  text-align:left;display:flex;flex-direction:column;position:relative;
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s;
+  box-shadow:var(--shadow);
+}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);border-color:var(--rule-hard)}
+.card-punch{
+  position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:26px;height:7px;border-radius:99px;
+  background:var(--chalk-dim);border:1px solid var(--rule-hard);
+  z-index:2;
+}
+.card-thumb{
+  position:relative;aspect-ratio:1/1;background:#F6F6F2;
+  border-bottom:1px solid var(--rule);overflow:hidden;
+  display:grid;place-items:center;padding:20px;
+}
+.card-thumb svg{width:100%;height:100%}
+.vbadge{
+  position:absolute;right:8px;bottom:8px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;
+  background:var(--ink);color:var(--chalk);
+  padding:3px 7px;border-radius:2px;letter-spacing:.06em;
+}
+.card-body{padding:11px 12px 12px;display:flex;flex-direction:column;gap:9px;flex:1}
+.card-code{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  color:var(--ink-faint);
+}
+.card-name{
+  font-size:14px;font-weight:600;letter-spacing:-.01em;line-height:1.25;
+}
+.card-name em{font-style:normal;font-family:'IBM Plex Mono',monospace;color:var(--ink-faint);font-weight:500;font-size:12px}
+.spec-chips{display:flex;flex-wrap:wrap;gap:4px}
+.spec{
+  font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.05em;
+  border:1px solid var(--rule);border-radius:2px;padding:2px 5px;color:var(--ink-soft);
+  white-space:nowrap;
+}
+.card-foot{
+  margin-top:auto;padding-top:9px;border-top:1px dashed var(--rule);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.stamp{
+  font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  border:1.5px solid currentColor;border-radius:2px;padding:2px 6px;
+}
+.st-design{color:var(--st-design)}
+.st-review{color:var(--st-review)}
+.st-approved{color:var(--st-approved)}
+.st-hold{color:var(--st-hold)}
+.st-dropped{color:var(--st-dropped);opacity:.7}
+.card-meta{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--ink-faint);display:flex;gap:8px;align-items:center}
+
+/* new design tile */
+.card-new{
+  border:1.5px dashed var(--rule-hard);background:transparent;box-shadow:none;
+  min-height:300px;display:grid;place-items:center;gap:0;
+}
+.card-new:hover{border-color:var(--indigo);background:var(--indigo-wash);transform:none;box-shadow:none}
+.card-new div{text-align:center;color:var(--ink-soft)}
+.card-new strong{display:block;font-size:13px;font-weight:600;margin-top:8px}
+
+/* ---------- overlay shell ---------- */
+.scrim{
+  position:fixed;inset:0;background:rgba(21,24,30,.5);
+  z-index:60;display:none;
+}
+.scrim.open{display:block}
+
+/* ---------- detail drawer ---------- */
+.drawer{
+  position:fixed;inset:0 0 0 auto;width:min(1180px,96vw);
+  background:var(--chalk);z-index:70;
+  transform:translateX(102%);transition:transform .26s cubic-bezier(.32,.72,0,1);
+  display:grid;grid-template-columns:1fr 344px;grid-template-rows:auto 1fr;
+}
+.drawer.open{transform:none}
+.drawer-head{
+  grid-column:1/-1;background:var(--card);border-bottom:1px solid var(--rule);
+  padding:13px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+}
+.drawer-title{display:flex;flex-direction:column;gap:2px;min-width:0}
+.drawer-title h2{font-size:17px;font-weight:700;letter-spacing:-.015em;display:flex;align-items:center;gap:9px}
+.drawer-title h2 em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--indigo);font-weight:600}
+.statuspick{
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.06em;
+  border:1.5px solid var(--rule-hard);border-radius:2px;background:var(--card);
+  padding:6px 9px;cursor:pointer;text-transform:uppercase;
+}
+.head-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{
+  font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:2px;
+  border:1px solid var(--rule-hard);background:var(--card);transition:.12s;
+}
+.btn:hover{border-color:var(--ink-soft)}
+.btn-primary{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.btn-primary:hover{background:var(--indigo-dk);border-color:var(--indigo-dk)}
+.btn-ghost{border-color:transparent;color:var(--ink-soft)}
+.btn-ghost:hover{background:var(--chalk-dim);border-color:transparent}
+
+/* viewer column */
+.viewer{
+  overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:16px;
+}
+.stage{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:26px;display:grid;place-items:center;position:relative;min-height:330px;
+}
+.stage svg{width:100%;max-width:330px;height:auto}
+.stage-tag{
+  position:absolute;top:12px;left:12px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.stage-lock{
+  position:absolute;top:11px;right:12px;display:flex;align-items:center;gap:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;
+  color:var(--st-hold);border:1px solid currentColor;border-radius:2px;padding:2px 6px;
+}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.compare .stage{min-height:280px}
+
+/* contact sheet — the signature element */
+.sheet{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;padding:12px;
+}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sheet-strip{
+  display:flex;gap:0;overflow-x:auto;padding-bottom:4px;align-items:stretch;
+}
+.frame{
+  flex:0 0 92px;border:1px solid var(--rule);background:#F6F6F2;
+  padding:8px 6px 6px;position:relative;transition:.12s;
+  border-right-width:0;
+}
+.frame:last-child{border-right-width:1px}
+.frame:hover{background:var(--indigo-wash)}
+.frame[aria-current="true"]{background:var(--indigo-wash);border-color:var(--indigo);border-right-width:1px;z-index:2}
+.frame[aria-current="true"]+.frame{border-left-width:0}
+.frame svg{width:100%;height:64px}
+.frame-lbl{
+  font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.08em;
+  text-align:center;color:var(--ink-soft);margin-top:6px;
+}
+.frame-by{font-family:'IBM Plex Mono',monospace;font-size:8.5px;text-align:center;color:var(--ink-faint)}
+.frame.is-ref{border-right-width:1px;margin-right:14px;position:relative;background:#FFFDF4}
+.frame.is-ref::after{
+  content:'';position:absolute;right:-8px;top:6px;bottom:6px;width:1px;
+  border-left:1px dashed var(--rule-hard);
+}
+.frame-add{
+  flex:0 0 92px;border:1.5px dashed var(--rule-hard);display:grid;place-items:center;
+  color:var(--ink-faint);gap:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;
+  letter-spacing:.06em;background:transparent;margin-left:6px;
+}
+.frame-add:hover{border-color:var(--indigo);color:var(--indigo);background:var(--indigo-wash)}
+
+/* spec block */
+.specs{background:var(--card);border:1px solid var(--rule);border-radius:3px}
+.specs-head{
+  padding:10px 14px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.spec-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
+.spec-cell{padding:9px 14px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.spec-cell label{display:block;margin-bottom:3px}
+.spec-cell select{
+  width:100%;border:1px solid var(--rule);border-radius:2px;padding:5px 7px;
+  font-size:12.5px;background:var(--card);cursor:pointer;
+}
+.spec-cell select:hover{border-color:var(--rule-hard)}
+
+/* comments column */
+.comments{
+  background:var(--card);border-left:1px solid var(--rule);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.comments-head{
+  padding:12px 15px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.comments-scope{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;
+  background:var(--indigo-wash);color:var(--indigo-dk);
+  padding:2px 7px;border-radius:2px;
+}
+.thread{flex:1;overflow-y:auto;padding:14px 15px;display:flex;flex-direction:column;gap:14px}
+.msg{display:flex;gap:9px}
+.msg-body{min-width:0;flex:1}
+.msg-top{display:flex;align-items:baseline;gap:7px;margin-bottom:2px}
+.msg-top b{font-size:12.5px;font-weight:600}
+.msg-top time{font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--ink-faint)}
+.msg-txt{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.msg-on{
+  display:inline-block;margin-top:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.06em;
+  border:1px solid var(--rule);border-radius:2px;padding:1px 5px;color:var(--ink-faint);
+}
+.sysmsg{
+  display:flex;gap:8px;align-items:center;padding:7px 0;
+  border-top:1px dashed var(--rule);border-bottom:1px dashed var(--rule);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;color:var(--ink-faint);
+}
+.composer{border-top:1px solid var(--rule);padding:11px 15px}
+.composer textarea{
+  width:100%;border:1px solid var(--rule);border-radius:2px;padding:8px 9px;
+  font-size:13px;resize:none;min-height:62px;background:#FCFCFA;
+}
+.composer textarea:focus{border-color:var(--indigo);background:var(--card)}
+.composer-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+
+/* ---------- modal ---------- */
+.modal{
+  position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-48%) scale(.99);
+  width:min(1000px,94vw);height:min(760px,90vh);
+  background:var(--chalk);border-radius:4px;box-shadow:var(--shadow-lift);
+  display:none;grid-template-rows:auto 1fr;overflow:hidden;
+  opacity:0;transition:opacity .16s,transform .16s;
+}
+.modal.open{display:grid;opacity:1;transform:translate(-50%,-50%) scale(1)}
+.modal-head{
+  background:var(--ink);color:var(--chalk);padding:14px 18px;
+  display:flex;align-items:center;gap:14px;
+}
+.modal-head h3{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.modal-head p{font-size:12px;color:#8E97A8;margin-top:1px}
+.modal-x{margin-left:auto;color:#8E97A8;font-size:20px;line-height:1;padding:4px 8px}
+.modal-x:hover{color:var(--chalk)}
+.modal-body{display:grid;grid-template-columns:196px 1fr;overflow:hidden}
+.modal-nav{
+  border-right:1px solid var(--rule);overflow-y:auto;padding:10px 0;background:var(--chalk-dim);
+}
+.navitem{
+  display:block;width:100%;text-align:left;padding:8px 16px;font-size:12.5px;
+  color:var(--ink-soft);border-left:2px solid transparent;
+}
+.navitem:hover{background:rgba(255,255,255,.6)}
+.navitem[aria-current="true"]{background:var(--card);border-left-color:var(--indigo);color:var(--ink);font-weight:600}
+.modal-main{overflow-y:auto;padding:18px}
+
+/* prompt list */
+.psearch{
+  width:100%;border:1px solid var(--rule-hard);border-radius:2px;padding:8px 11px;
+  font-size:13px;background:var(--card);margin-bottom:14px;
+}
+.prompt{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:12px 13px;margin-bottom:9px;display:flex;gap:12px;align-items:flex-start;
+}
+.prompt:hover{border-color:var(--rule-hard)}
+.prompt-txt{flex:1;min-width:0}
+.prompt-lbl{font-size:12.5px;font-weight:600;margin-bottom:5px}
+.prompt-body{
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;
+  color:var(--ink-soft);background:#FAFAF7;border:1px solid var(--rule);
+  border-radius:2px;padding:8px 9px;white-space:pre-wrap;
+}
+.prompt-body mark{background:#FFF3C4;color:var(--ink);padding:0 2px;border-radius:1px}
+.copybtn{
+  flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;
+  border:1px solid var(--rule-hard);border-radius:2px;padding:6px 10px;
+  text-transform:uppercase;font-weight:600;transition:.12s;
+}
+.copybtn:hover{background:var(--ink);border-color:var(--ink);color:var(--chalk)}
+.copybtn.done{background:var(--st-approved);border-color:var(--st-approved);color:#fff}
+
+/* tool guide cards */
+.tool{
+  background:var(--card);border:1px solid var(--rule);border-radius:3px;
+  padding:14px;margin-bottom:12px;
+}
+.tool-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.tool-top b{font-size:13.5px}
+.tool-link{
+  margin-left:auto;font-size:12px;font-weight:600;color:var(--indigo);
+  display:inline-flex;align-items:center;gap:5px;
+}
+.tool-link:hover{text-decoration:underline}
+.tool ol{margin-left:17px;display:flex;flex-direction:column;gap:5px}
+.tool li{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
+
+/* settings — option list editor */
+.optgroup{background:var(--card);border:1px solid var(--rule);border-radius:3px;margin-bottom:14px}
+.optgroup-head{
+  padding:11px 14px;border-bottom:1px solid var(--rule);
+  display:flex;align-items:center;gap:10px;
+}
+.optgroup-head b{font-size:13px}
+.optgroup-head .eyebrow{margin-left:auto}
+.optlist{padding:12px 14px;display:flex;flex-wrap:wrap;gap:6px}
+.opt{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:'IBM Plex Mono',monospace;font-size:11px;
+  border:1px solid var(--rule-hard);border-radius:2px;padding:4px 5px 4px 9px;
+  background:#FAFAF7;
+}
+.opt button{color:var(--ink-faint);font-size:14px;line-height:1;padding:0 2px}
+.opt button:hover{color:var(--st-dropped)}
+.optadd{padding:0 14px 12px;display:flex;gap:7px}
+.optadd input{
+  flex:1;border:1px solid var(--rule);border-radius:2px;padding:6px 9px;font-size:12.5px;
+  background:var(--card);
+}
+
+/* toast */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);
+  background:var(--ink);color:var(--chalk);padding:10px 18px;border-radius:2px;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.05em;
+  z-index:200;transition:transform .22s cubic-bezier(.32,.72,0,1);box-shadow:var(--shadow-lift);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+.hint{
+  font-size:12px;color:var(--ink-faint);line-height:1.5;
+  border-left:2px solid var(--rule-hard);padding-left:10px;margin-bottom:14px;
+}
+
+@media (max-width:980px){
+  .drawer{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+  .comments{border-left:none;border-top:1px solid var(--rule);max-height:44vh}
+  .modal-body{grid-template-columns:1fr}
+  .modal-nav{display:flex;overflow-x:auto;border-right:none;border-bottom:1px solid var(--rule);padding:0}
+  .navitem{white-space:nowrap;border-left:none;border-bottom:2px solid transparent}
+  .navitem[aria-current="true"]{border-left:none;border-bottom-color:var(--indigo)}
+  .compare{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>Design Board</b><span>SS26</span></div>
+  <div class="search">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input type="search" placeholder="Search name, code, fabric…" id="q">
+  </div>
+  <div class="topbar-spacer"></div>
+  <button class="iconbtn accent" id="openAI" title="Prompt library &amp; editing guides">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M18 16l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>
+    </svg>
+  </button>
+  <button class="iconbtn" id="openSettings" title="Manage design options">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-1.8-.3 1.6 1.6 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.6 1.6 0 008 19.4a1.6 1.6 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00.3-1.8 1.6 1.6 0 00-1.5-1H2a2 2 0 110-4h.1A1.6 1.6 0 004.6 8a1.6 1.6 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 001.8.3H9a1.6 1.6 0 001-1.5V2a2 2 0 114 0v.1a1.6 1.6 0 001 1.5 1.6 1.6 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00-.3 1.8V9a1.6 1.6 0 001.5 1H22a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1z"/>
+    </svg>
+  </button>
+  <div class="whoami">
+    <div class="avatar">RK</div>
+    <div style="font-size:12px">Ravi K.</div>
+  </div>
+</header>
+
+<div class="rail" id="rail">
+  <span class="eyebrow" style="margin-right:4px">Status</span>
+  <button class="chipfilter" aria-pressed="true" data-f="all">All</button>
+  <button class="chipfilter" aria-pressed="false" data-f="In Design">In Design</button>
+  <button class="chipfilter" aria-pressed="false" data-f="In Review">In Review</button>
+  <button class="chipfilter" aria-pressed="false" data-f="Approved">Approved</button>
+  <button class="chipfilter" aria-pressed="false" data-f="On Hold">On Hold</button>
+  <button class="chipfilter" aria-pressed="false" data-f="Dropped">Dropped</button>
+  <span class="rail-count" id="railCount">—</span>
+</div>
+
+<main class="board" id="board"></main>
+
+<!-- ============ DETAIL DRAWER ============ -->
+<div class="scrim" id="scrim"></div>
+<section class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-head">
+    <div class="drawer-title">
+      <span class="mono" style="font-size:10px;letter-spacing:.12em;color:var(--ink-faint)" id="dCode">—</span>
+      <h2 id="dName">—</h2>
+    </div>
+    <select class="statuspick" id="dStatus">
+      <option>In Design</option><option>In Review</option><option>Approved</option>
+      <option>On Hold</option><option>Dropped</option>
+    </select>
+    <div class="head-actions">
+      <button class="btn" id="cmpBtn">Compare to reference</button>
+      <button class="btn btn-primary" id="upBtn">Upload new version</button>
+      <button class="btn btn-ghost" id="closeDrawer">Close</button>
+    </div>
+  </div>
+
+  <div class="viewer">
+    <div id="stageWrap"></div>
+
+    <div class="sheet">
+      <div class="sheet-head">
+        <span class="eyebrow">Contact sheet · reference locked, edits open</span>
+        <span class="eyebrow" id="sheetCount"></span>
+      </div>
+      <div class="sheet-strip" id="strip"></div>
+    </div>
+
+    <div class="specs">
+      <div class="specs-head">
+        <span class="eyebrow">Design specification</span>
+        <button class="btn btn-ghost" style="font-size:11.5px;padding:4px 8px" id="specSettings">Edit option lists</button>
+      </div>
+      <div class="spec-grid" id="specGrid"></div>
+    </div>
+  </div>
+
+  <aside class="comments">
+    <div class="comments-head">
+      <span class="eyebrow">Comments</span>
+      <span class="comments-scope" id="cScope">v0 · reference</span>
+    </div>
+    <div class="thread" id="thread"></div>
+    <div class="composer">
+      <textarea id="cInput" placeholder="Comment on this version…"></textarea>
+      <div class="composer-row">
+        <span class="eyebrow">Posts against the version on screen</span>
+        <button class="btn btn-primary" id="cSend">Post</button>
+      </div>
+    </div>
+  </aside>
+</section>
+
+<!-- ============ PROMPT LIBRARY MODAL ============ -->
+<div class="modal" id="aiModal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div>
+      <h3>Prompt library</h3>
+      <p>Copy a prompt, paste it into your editing tool, upload the result as a version.</p>
+    </div>
+    <button class="modal-x" data-close="aiModal">&times;</button>
+  </div>
+  <div class="modal-body">
+    <nav class="modal-nav" id="promptNav"></nav>
+    <div class="modal-main" id="promptMain"></div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div class="modal" id="setModal" role="dialog" aria-modal="true">
+  <div class="modal-head">
+    <div>
+      <h3>Design options</h3>
+      <p>Values here fill the dropdowns on every design. Add or remove as your range changes.</p>
+    </div>
+    <button class="modal-x" data-close="setModal">&times;</button>
+  </div>
+  <div class="modal-body">
+    <nav class="modal-nav" id="setNav"></nav>
+    <div class="modal-main" id="setMain"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   WIREFRAME DATA — all in memory, resets on reload
+   ============================================================ */
+
+const OPTIONS = {
+  "Segment":        ["Men","Women","Unisex","Kids"],
+  "Category":       ["T-Shirt","Polo","Oversized Tee","Hoodie","Sweatshirt","Tank Top","Crop Top"],
+  "Fabric":         ["Cotton 100%","Cotton-Poly 60/40","Poly-Cotton 65/35","Cotton-Lycra 95/5","Viscose","Modal","Bamboo","Slub Cotton","Linen Blend"],
+  "Knit type":      ["Single Jersey","Pique","Interlock","French Terry","Fleece","Rib 1x1","Rib 2x2"],
+  "GSM":            ["140","150","160","180","190","200","220","240","280","320"],
+  "Neck type":      ["Round Neck","V-Neck","Polo Collar","Henley","Mock Neck","Boat Neck","Scoop Neck","Turtle Neck"],
+  "Sleeve":         ["Short Sleeve","Half Sleeve","Three-Quarter","Full Sleeve","Sleeveless","Raglan","Drop Shoulder","Cap Sleeve"],
+  "Fit":            ["Regular Fit","Slim Fit","Oversized","Relaxed","Boxy","Athletic","Muscle Fit"],
+  "Colours":        ["Black","White","Navy","Olive","Maroon","Beige","Sage","Mustard","Charcoal","Sky Blue","Lavender","Rust"],
+  "Colour type":    ["Solid","Melange","Yarn Dyed","Pigment Dyed","Acid Wash","Tie & Dye","Stripe","Colour Block"],
+  "Print technique":["Screen Print","DTG","DTF","Sublimation","Embroidery","Puff Print","HD Print","Vinyl","Rubber Print","Foil","None"],
+  "Print placement":["Left Chest","Right Chest","Front Centre","Full Front","Back Yoke","Full Back","Left Sleeve","Right Sleeve","Nape","Hem"],
+  "Wash / finish":  ["None","Bio Wash","Enzyme Wash","Silicon Wash","Garment Dyed","Stone Wash"],
+  "Hem":            ["Straight Hem","Curved Hem","High-Low","Raw Edge","Ribbed Hem"],
+  "Trims":          ["Woven Label","Printed Label","Heat Transfer Label","Hangtag","Care Label","Twill Tape","Drawcord","Metal Eyelet"],
+  "Size range":     ["XS–XL","S–XXL","S–3XL","M–XXL","Free Size"],
+  "Season":         ["SS26","AW26","SS27","AW27"]
+};
+
+const SWATCH = {
+  "Black":"#22252B","White":"#F2F2EE","Navy":"#26324F","Olive":"#6B7050","Maroon":"#5E2A34",
+  "Beige":"#D6C7AE","Sage":"#A8B49B","Mustard":"#C79A2E","Charcoal":"#43474E",
+  "Sky Blue":"#9FC0D9","Lavender":"#B6AECB","Rust":"#A2543A"
+};
+
+const PROMPTS = {
+  "Logo & placement":[
+    ["Small chest logo, exact size",
+     "Place the supplied logo on the RIGHT CHEST of the t-shirt. Printed width exactly <mark>40 mm</mark>, positioned <mark>75 mm</mark> down from the shoulder seam and <mark>60 mm</mark> in from the centre front. Keep the logo flat on the fabric, following the natural drape and shadow of the garment. Do not change anything else."],
+    ["Left chest pocket-height logo",
+     "Add the logo to the LEFT CHEST at pocket height. Printed width <mark>50 mm</mark>. Align the logo centre with the wearer's left nipple line. Match the print sheen to a <mark>screen print</mark> finish — slightly matte, sitting on top of the fabric weave."],
+    ["Centre-front large graphic",
+     "Place the graphic CENTRE FRONT. Top edge <mark>110 mm</mark> below the neck rib. Printed width <mark>240 mm</mark>. The print must curve naturally with the chest and distort slightly across fabric folds."],
+    ["Nape / inner neck label",
+     "Add a small printed label at the NAPE, just below the inside neck rib. Width <mark>45 mm</mark>. Render it as a <mark>heat transfer label</mark> — thin, slightly glossy, sitting flush against the fabric."],
+    ["Sleeve hit",
+     "Add a small logo to the <mark>LEFT SLEEVE</mark>, centred, <mark>30 mm</mark> above the sleeve hem. Printed width <mark>35 mm</mark>. Wrap the print around the arm curvature."]
+  ],
+  "Colour changes":[
+    ["Solid colour swap",
+     "Change the garment body colour to <mark>off-white</mark>. Preserve every fold, shadow, seam and highlight exactly as they are. Reconstruct the fabric shading so the folds still read clearly in the lighter colour. Do not alter the print, trims or background."],
+    ["Contrast collar and cuffs",
+     "Keep the body <mark>navy</mark>. Change the collar rib and sleeve cuffs to <mark>off-white</mark>. Keep the rib texture visible. The colour split must follow the existing seam lines precisely."],
+    ["Colour block panel",
+     "Split the garment into a colour block: <mark>upper chest and sleeves in ecru</mark>, <mark>body below the chest in rust</mark>. The dividing line runs horizontally across the chest, level with the underarm seam."],
+    ["Melange effect",
+     "Convert the solid body colour to a <mark>grey melange</mark> — visible heathered fibre variation, slightly desaturated, with fine light and dark flecks through the knit."]
+  ],
+  "Fabric & texture":[
+    ["Change knit structure",
+     "Change the fabric from single jersey to <mark>pique knit</mark>. Show the characteristic small waffle texture across the whole body. Keep the garment shape, colour and print identical."],
+    ["Heavier GSM look",
+     "Make the fabric read as a heavier <mark>240 GSM</mark> knit — stiffer drape, fewer and broader folds, more substantial hem and cuff. Keep the colour and silhouette unchanged."],
+    ["Washed / worn finish",
+     "Apply an <mark>enzyme wash</mark> finish. Slightly faded colour, softer surface, gentle vertical fade through the body, marginally relaxed drape. Do not distress or damage the fabric."],
+    ["Slub texture",
+     "Change the fabric to <mark>slub cotton</mark> — irregular thick-and-thin yarn texture visible across the body, most noticeable in flat lit areas."]
+  ],
+  "Neck & collar":[
+    ["Neckline change",
+     "Change the neckline from round neck to <mark>V-neck</mark>. Depth <mark>110 mm</mark> from the shoulder seam line. Keep the rib width consistent at <mark>20 mm</mark>."],
+    ["Add polo placket",
+     "Convert the neckline to a <mark>polo collar with a 3-button placket</mark>. Placket length <mark>150 mm</mark>. Collar in matching rib. Buttons in a tonal shade."],
+    ["Rib width",
+     "Change the neck rib width to <mark>25 mm</mark>. Keep it flat and even all the way round, with a visible rib texture."]
+  ],
+  "Sleeve & fit":[
+    ["Silhouette change",
+     "Change the fit from regular to <mark>oversized</mark>: wider body, dropped shoulder seam sitting <mark>60 mm</mark> below the natural shoulder point, longer body length. Keep fabric, colour and print unchanged."],
+    ["Sleeve length",
+     "Change to <mark>full sleeve</mark>, ending at the wrist bone, with a <mark>50 mm</mark> ribbed cuff."],
+    ["Drop shoulder",
+     "Move the shoulder seam outward to create a <mark>drop shoulder</mark>. The seam should sit on the upper arm, and the sleeve head should fall in a soft fold."],
+    ["Body length",
+     "Increase the body length by <mark>40 mm</mark> so the hem sits lower on the hip. Keep proportions of sleeve and neck unchanged."]
+  ],
+  "Print & graphics":[
+    ["Puff print",
+     "Render the existing chest graphic as a <mark>puff print</mark> — raised approximately <mark>2 mm</mark> above the fabric surface, with a soft rounded edge and a matte finish."],
+    ["Embroidery",
+     "Convert the chest logo to <mark>flat embroidery</mark>. Show individual stitch direction, slight thread sheen, and a small amount of fabric pucker around the stitched edge."],
+    ["Remove all graphics",
+     "Remove every print, logo and graphic from the garment. Leave a clean blank surface. Preserve fabric texture, folds and colour exactly."]
+  ],
+  "Presentation":[
+    ["Flat lay",
+     "Show the garment as a clean <mark>flat lay</mark> on a neutral light grey surface, shot straight from above, sleeves laid flat and slightly angled, even soft lighting, no mannequin or model."],
+    ["Ghost mannequin",
+     "Present the garment as a <mark>ghost mannequin</mark> product shot — filled body shape with no visible mannequin, hollow neck opening showing the inside back neck, on a plain white background."],
+    ["Back view",
+     "Show the <mark>back view</mark> of the same garment, keeping fabric, colour, fit and all trims identical to the front view."],
+    ["Clean the background",
+     "Replace the background with a plain <mark>light grey studio backdrop</mark>. Keep the garment, its lighting and its shadow completely unchanged."]
+  ]
+};
+
+const TOOLS = [
+  {name:"Google Gemini", url:"https://gemini.google.com",
+   steps:["Open Gemini and start a new chat.","Upload the version image you want to change.","Paste the copied prompt below the image.","Ask for one change at a time — stacked edits drift.","Download the result, then upload it here as a new version."]},
+  {name:"Google Flow", url:"https://labs.google/flow",
+   steps:["Open Flow and create a new project.","Add the version image as your starting frame.","Paste the copied prompt into the edit field.","Generate, then pick the best of the options shown.","Download and upload it here as a new version."]},
+  {name:"Adobe Firefly", url:"https://firefly.adobe.com",
+   steps:["Open Firefly and choose Generative Fill.","Upload the version image.","Brush over just the area you want changed.","Paste the prompt and generate.","Download at full resolution and upload here."]}
+];
+
+const USERS={RK:["Ravi K.","#33448C"],PS:["Priya S.","#7A5B9E"],AN:["Anil N.","#2C6E4B"],MJ:["Meera J.","#9A6A11"],DV:["Dev V.","#96403F"]};
+
+function shirt(colour,neck,sleeve,print){
+  const c=SWATCH[colour]||"#B9BCC4";
+  const dark=["Black","Navy","Charcoal","Maroon","Olive","Rust"].includes(colour);
+  const line=dark?"rgba(255,255,255,.24)":"rgba(21,24,30,.26)";
+  const drop=sleeve==="Drop Shoulder"||sleeve==="Raglan";
+  const long=sleeve==="Full Sleeve"||sleeve==="Three-Quarter";
+  const sw=drop?34:26, sl=long?92:44;
+  const nk=neck==="V-Neck"
+    ?`<path d="M84 26 L100 52 L116 26" fill="none" stroke="${line}" stroke-width="2.4"/>`
+    :neck==="Polo Collar"
+    ?`<path d="M84 24 L100 40 L116 24 M100 40 L100 74" fill="none" stroke="${line}" stroke-width="2.4"/>`
+    :`<path d="M82 26 Q100 44 118 26" fill="none" stroke="${line}" stroke-width="2.4"/>`;
+  const pr=print?`<rect x="118" y="60" width="17" height="17" rx="2" fill="${line}" opacity=".8"/>`:"";
+  return `<svg viewBox="0 0 200 210" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M84 22 L58 32 L${58-sw} ${44} L${52-sw} ${44+sl} L${72-sw*0.5} ${52+sl} L68 60 L66 186 Q100 194 134 186 L132 60 L${128+sw*0.5} ${52+sl} L${148+sw} ${44+sl} L${142+sw} 44 L142 32 L116 22 Q100 40 84 22 Z"
+      fill="${c}" stroke="${dark?'rgba(255,255,255,.18)':'rgba(21,24,30,.34)'}" stroke-width="1.6" stroke-linejoin="round"/>
+    ${nk}${pr}
+    <path d="M78 100 Q84 140 80 182 M122 100 Q116 140 120 182" fill="none" stroke="${line}" stroke-width="1" opacity=".55"/>
+  </svg>`;
+}
+
+let SEQ=1;
+function mk(name,cat,status,specs,versions,comments){
+  const code=`${specs["Season"]}-${cat.slice(0,2).toUpperCase()}-${String(SEQ++).padStart(3,"0")}`;
+  return {code,name,status,specs,versions,comments};
+}
+function v(by,note,colour,neck,sleeve,print,when){return{by,note,colour,neck,sleeve,print,when};}
+
+const DESIGNS=[
+  mk("Drop Shoulder Heavy Tee","T-Shirt","In Review",
+    {"Season":"SS26","Segment":"Men","Category":"Oversized Tee","Fabric":"Cotton 100%","Knit type":"Single Jersey","GSM":"240","Neck type":"Round Neck","Sleeve":"Drop Shoulder","Fit":"Oversized","Colours":"Sage","Colour type":"Solid","Print technique":"Puff Print","Print placement":"Front Centre","Wash / finish":"Bio Wash","Hem":"Straight Hem","Trims":"Woven Label","Size range":"S–3XL"},
+    [v("RK","Reference from the Bangalore sourcing trip","Beige","Round Neck","Short Sleeve",false,"14 Aug, 09:12"),
+     v("RK","Colour changed to sage, kept the drape","Sage","Round Neck","Drop Shoulder",false,"14 Aug, 11:40"),
+     v("PS","Added the puff chest hit at 240 mm","Sage","Round Neck","Drop Shoulder",true,"14 Aug, 15:02"),
+     v("RK","Widened the body, dropped shoulder 60 mm","Sage","Round Neck","Drop Shoulder",true,"15 Aug, 10:18")],
+    {0:[["PS","Good base but the beige is too warm for the SS26 palette.","14 Aug, 10:05"]],
+     2:[["AN","Puff looks right. Can we see it 20 mm smaller?","14 Aug, 16:20"],
+        ["RK","Will try on the next round.","14 Aug, 16:44"]],
+     3:[["MJ","Shoulder drop is sitting nicely now. Happy to move this to sampling once Anil signs off.","15 Aug, 11:02"]]}),
+
+  mk("Ecru Pique Polo","Polo","Approved",
+    {"Season":"SS26","Segment":"Men","Category":"Polo","Fabric":"Cotton-Poly 60/40","Knit type":"Pique","GSM":"200","Neck type":"Polo Collar","Sleeve":"Short Sleeve","Fit":"Regular Fit","Colours":"Beige","Colour type":"Yarn Dyed","Print technique":"Embroidery","Print placement":"Left Chest","Wash / finish":"Silicon Wash","Hem":"Curved Hem","Trims":"Printed Label","Size range":"S–XXL"},
+    [v("PS","Supplier reference sample","White","Polo Collar","Short Sleeve",false,"08 Aug, 14:20"),
+     v("PS","Ecru body, tonal placket","Beige","Polo Collar","Short Sleeve",false,"09 Aug, 09:55"),
+     v("AN","Left chest embroidery, 50 mm","Beige","Polo Collar","Short Sleeve",true,"11 Aug, 12:30")],
+    {2:[["MJ","Approved. Embroidery size is right, placket proportion works.","12 Aug, 09:15"],
+        ["PS","Thanks — sending specs across today.","12 Aug, 09:40"]]}),
+
+  mk("Indigo Acid Wash Tee","T-Shirt","In Design",
+    {"Season":"SS26","Segment":"Unisex","Category":"T-Shirt","Fabric":"Slub Cotton","Knit type":"Single Jersey","GSM":"180","Neck type":"Round Neck","Sleeve":"Short Sleeve","Fit":"Relaxed","Colours":"Navy","Colour type":"Acid Wash","Print technique":"None","Print placement":"Left Chest","Wash / finish":"Enzyme Wash","Hem":"Raw Edge","Trims":"Heat Transfer Label","Size range":"XS–XL"},
+    [v("AN","Market reference, Commercial Street","Navy","Round Neck","Short Sleeve",false,"16 Aug, 16:44"),
+     v("AN","Acid wash pass — a bit heavy handed","Navy","Round Neck","Short Sleeve",false,"17 Aug, 10:12")],
+    {1:[["RK","Wash is too aggressive, we lose the slub. Go back to the reference and try lighter.","17 Aug, 11:30"]]}),
+
+  mk("Boxy Crop Tank","Tank Top","In Design",
+    {"Season":"SS26","Segment":"Women","Category":"Crop Top","Fabric":"Modal","Knit type":"Single Jersey","GSM":"160","Neck type":"Scoop Neck","Sleeve":"Sleeveless","Fit":"Boxy","Colours":"Lavender","Colour type":"Solid","Print technique":"DTG","Print placement":"Front Centre","Wash / finish":"None","Hem":"Straight Hem","Trims":"Printed Label","Size range":"XS–XL"},
+    [v("MJ","Reference from the AW25 range","White","Scoop Neck","Sleeveless",false,"18 Aug, 11:00"),
+     v("MJ","Lavender, boxier through the body","Lavender","Scoop Neck","Sleeveless",false,"18 Aug, 14:22")],
+    {1:[["PS","Nice. Can we see this in sage too before we lock the colourway?","18 Aug, 15:10"]]}),
+
+  mk("French Terry Hoodie","Hoodie","On Hold",
+    {"Season":"AW26","Segment":"Unisex","Category":"Hoodie","Fabric":"Cotton-Poly 60/40","Knit type":"French Terry","GSM":"320","Neck type":"Mock Neck","Sleeve":"Full Sleeve","Fit":"Oversized","Colours":"Charcoal","Colour type":"Melange","Print technique":"Screen Print","Print placement":"Full Back","Wash / finish":"None","Hem":"Ribbed Hem","Trims":"Drawcord","Size range":"S–XXL"},
+    [v("DV","Reference from the Tirupur vendor","Charcoal","Mock Neck","Full Sleeve",false,"05 Aug, 10:30"),
+     v("DV","Melange conversion, back print blocked in","Charcoal","Mock Neck","Full Sleeve",true,"06 Aug, 15:45")],
+    {1:[["MJ","Parking this until the AW26 budget is confirmed.","07 Aug, 09:00"]]}),
+
+  mk("Rust Colour Block Tee","T-Shirt","In Review",
+    {"Season":"SS26","Segment":"Men","Category":"T-Shirt","Fabric":"Cotton 100%","Knit type":"Single Jersey","GSM":"190","Neck type":"Round Neck","Sleeve":"Short Sleeve","Fit":"Regular Fit","Colours":"Rust","Colour type":"Colour Block","Print technique":"Screen Print","Print placement":"Left Chest","Wash / finish":"Bio Wash","Hem":"Straight Hem","Trims":"Woven Label","Size range":"S–XXL"},
+    [v("RK","Pinterest reference","White","Round Neck","Short Sleeve",false,"12 Aug, 09:00"),
+     v("RK","Rust body, ecru upper panel","Rust","Round Neck","Short Sleeve",false,"12 Aug, 13:30"),
+     v("PS","Small left chest print added","Rust","Round Neck","Short Sleeve",true,"13 Aug, 10:15")],
+    {2:[["AN","Block line sits a bit high. Drop it to the underarm seam.","13 Aug, 14:00"]]}),
+
+  mk("Mustard Henley","T-Shirt","In Design",
+    {"Season":"AW26","Segment":"Men","Category":"T-Shirt","Fabric":"Cotton-Lycra 95/5","Knit type":"Rib 2x2","GSM":"220","Neck type":"Henley","Sleeve":"Three-Quarter","Fit":"Slim Fit","Colours":"Mustard","Colour type":"Solid","Print technique":"None","Print placement":"Nape","Wash / finish":"Garment Dyed","Hem":"Curved Hem","Trims":"Care Label","Size range":"S–XXL"},
+    [v("PS","Reference lifted from the AW25 lookbook","Mustard","Round Neck","Short Sleeve",false,"18 Aug, 16:00")],
+    {}),
+
+  mk("Sky Melange Sweatshirt","Sweatshirt","Dropped",
+    {"Season":"AW26","Segment":"Women","Category":"Sweatshirt","Fabric":"Cotton-Poly 60/40","Knit type":"Fleece","GSM":"280","Neck type":"Round Neck","Sleeve":"Full Sleeve","Fit":"Relaxed","Colours":"Sky Blue","Colour type":"Melange","Print technique":"Vinyl","Print placement":"Front Centre","Wash / finish":"None","Hem":"Ribbed Hem","Trims":"Woven Label","Size range":"S–XXL"},
+    [v("DV","Reference","Sky Blue","Round Neck","Full Sleeve",false,"01 Aug, 11:00")],
+    {0:[["MJ","Dropping — too close to the SS26 sweat we already approved.","03 Aug, 10:00"]]})
+];
+
+/* ============================================================
+   BOARD
+   ============================================================ */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+let filter="all", query="";
+
+function statusClass(s){
+  return {"In Design":"st-design","In Review":"st-review","Approved":"st-approved","On Hold":"st-hold","Dropped":"st-dropped"}[s];
+}
+
+function renderBoard(){
+  const board=$("#board");
+  const list=DESIGNS.filter(d=>{
+    const okF = filter==="all"||d.status===filter;
+    const hay = (d.name+" "+d.code+" "+Object.values(d.specs).join(" ")).toLowerCase();
+    return okF && hay.includes(query.toLowerCase());
+  });
+
+  board.innerHTML = list.map(d=>{
+    const last=d.versions[d.versions.length-1];
+    const vn=d.versions.length-1;
+    const nComments=Object.values(d.comments).reduce((a,b)=>a+b.length,0);
+    const chips=["Fabric","GSM","Neck type","Fit"].map(k=>`<span class="spec">${k==="GSM"?d.specs[k]+" GSM":d.specs[k]}</span>`).join("");
+    return `<button class="card" data-code="${d.code}">
+      <div class="card-punch"></div>
+      <div class="card-thumb">${shirt(last.colour,last.neck,last.sleeve,last.print)}
+        <span class="vbadge">v${vn}</span></div>
+      <div class="card-body">
+        <div class="card-code">${d.code}</div>
+        <div class="card-name">${d.name} <em>· v${vn}</em></div>
+        <div class="spec-chips">${chips}</div>
+        <div class="card-foot">
+          <span class="stamp ${statusClass(d.status)}">${d.status}</span>
+          <span class="card-meta">${nComments}&nbsp;💬</span>
+        </div>
+      </div>
+    </button>`;
+  }).join("") + `<button class="card card-new" id="newDesign">
+      <div>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 5v14M5 12h14"/></svg>
+        <strong>New design</strong>
+        <span class="eyebrow">Upload a reference image</span>
+      </div></button>`;
+
+  $("#railCount").textContent=`${list.length} of ${DESIGNS.length} designs`;
+
+  $$(".card[data-code]").forEach(el=>el.addEventListener("click",()=>openDrawer(el.dataset.code)));
+  $("#newDesign").addEventListener("click",()=>toast("Wireframe — new design form not built"));
+}
+
+$("#rail").addEventListener("click",e=>{
+  const b=e.target.closest(".chipfilter"); if(!b)return;
+  $$(".chipfilter").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  filter=b.dataset.f; renderBoard();
+});
+$("#q").addEventListener("input",e=>{query=e.target.value;renderBoard();});
+
+/* ============================================================
+   DRAWER
+   ============================================================ */
+let cur=null, curV=0, compare=false;
+
+function openDrawer(code){
+  cur=DESIGNS.find(d=>d.code===code);
+  curV=cur.versions.length-1; compare=false;
+  paintDrawer();
+  $("#drawer").classList.add("open");
+  $("#drawer").setAttribute("aria-hidden","false");
+  $("#scrim").classList.add("open");
+}
+function closeDrawer(){
+  $("#drawer").classList.remove("open");
+  $("#drawer").setAttribute("aria-hidden","true");
+  $("#scrim").classList.remove("open");
+  renderBoard();
+}
+$("#closeDrawer").addEventListener("click",closeDrawer);
+$("#scrim").addEventListener("click",closeDrawer);
+
+function paintDrawer(){
+  const d=cur, ver=d.versions[curV], isRef=curV===0;
+  $("#dCode").textContent=d.code;
+  $("#dName").innerHTML=`${d.name} <em>· v${d.versions.length-1}</em>`;
+  $("#dStatus").value=d.status;
+  $("#dStatus").className="statuspick "+statusClass(d.status);
+  $("#cmpBtn").textContent = compare?"Exit compare":"Compare to reference";
+
+  const one=(v,i)=>`<div class="stage">
+      <span class="stage-tag">${i===0?"v0 · reference":"v"+i}</span>
+      ${i===0?`<span class="stage-lock">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+        Locked</span>`:""}
+      ${shirt(v.colour,v.neck,v.sleeve,v.print)}
+    </div>`;
+
+  $("#stageWrap").innerHTML = compare
+    ? `<div class="compare">${one(d.versions[0],0)}${one(ver,curV)}</div>`
+    : one(ver,curV);
+
+  $("#sheetCount").textContent=`${d.versions.length-1} edit${d.versions.length-1===1?"":"s"} · 1 reference`;
+  $("#strip").innerHTML = d.versions.map((v,i)=>`
+    <button class="frame ${i===0?"is-ref":""}" data-v="${i}" aria-current="${i===curV}">
+      ${shirt(v.colour,v.neck,v.sleeve,v.print)}
+      <div class="frame-lbl">${i===0?"REF":"v"+i}</div>
+      <div class="frame-by">${v.by} · ${v.when.split(",")[0]}</div>
+    </button>`).join("")
+    + `<button class="frame-add" id="addV">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+        UPLOAD</button>`;
+
+  $$(".frame").forEach(f=>f.addEventListener("click",()=>{curV=+f.dataset.v;paintDrawer();}));
+  $("#addV").addEventListener("click",()=>toast("Wireframe — file picker not wired"));
+
+  $("#specGrid").innerHTML = Object.keys(OPTIONS).map(k=>`
+    <div class="spec-cell">
+      <label class="eyebrow">${k}</label>
+      <select data-k="${k}">
+        ${OPTIONS[k].map(o=>`<option ${o===d.specs[k]?"selected":""}>${o}</option>`).join("")}
+      </select>
+    </div>`).join("");
+  $$(".spec-cell select").forEach(s=>s.addEventListener("change",()=>{
+    d.specs[s.dataset.k]=s.value; toast(`${s.dataset.k} → ${s.value}`);
+  }));
+
+  paintThread();
+}
+
+function paintThread(){
+  const d=cur, list=d.comments[curV]||[];
+  $("#cScope").textContent = curV===0?"v0 · reference":"v"+curV;
+  $("#cInput").placeholder = `Comment on ${curV===0?"the reference":"v"+curV}…`;
+
+  const ver=d.versions[curV];
+  const sys=`<div class="sysmsg">
+    <span class="avatar" style="width:18px;height:18px;font-size:8px;background:${USERS[ver.by][1]}">${ver.by}</span>
+    ${USERS[ver.by][0]} uploaded ${curV===0?"the reference":"v"+curV} · ${ver.when}
+  </div>
+  <div class="msg-txt" style="font-size:12.5px;font-style:italic;color:var(--ink-faint)">${ver.note}</div>`;
+
+  $("#thread").innerHTML = sys + (list.length
+    ? list.map(([u,t,when])=>`<div class="msg">
+        <span class="avatar" style="background:${USERS[u][1]}">${u}</span>
+        <div class="msg-body">
+          <div class="msg-top"><b>${USERS[u][0]}</b><time>${when}</time></div>
+          <div class="msg-txt">${t}</div>
+        </div></div>`).join("")
+    : `<div class="hint" style="margin-top:6px">No comments on this version yet. Say what should change and who should pick it up.</div>`);
+  $("#thread").scrollTop=$("#thread").scrollHeight;
+}
+
+$("#cSend").addEventListener("click",()=>{
+  const t=$("#cInput").value.trim(); if(!t)return;
+  (cur.comments[curV] ||= []).push(["RK",t,"just now"]);
+  $("#cInput").value=""; paintThread();
+});
+$("#cInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&(e.metaKey||e.ctrlKey))$("#cSend").click();
+});
+$("#dStatus").addEventListener("change",e=>{
+  cur.status=e.target.value;
+  e.target.className="statuspick "+statusClass(cur.status);
+  toast(`Status → ${cur.status}`);
+});
+$("#cmpBtn").addEventListener("click",()=>{compare=!compare;paintDrawer();});
+$("#upBtn").addEventListener("click",()=>toast("Wireframe — file picker not wired"));
+$("#specSettings").addEventListener("click",()=>openModal("setModal"));
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function openModal(id){$("#scrim").classList.add("open");$("#"+id).classList.add("open");}
+function closeModals(){
+  $$(".modal").forEach(m=>m.classList.remove("open"));
+  if(!$("#drawer").classList.contains("open"))$("#scrim").classList.remove("open");
+}
+$$("[data-close]").forEach(b=>b.addEventListener("click",closeModals));
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape")return;
+  if($$(".modal.open").length)closeModals();
+  else if($("#drawer").classList.contains("open"))closeDrawer();
+});
+
+/* --- prompt library --- */
+let pcat=Object.keys(PROMPTS)[0], pq="";
+function paintPrompts(){
+  $("#promptNav").innerHTML =
+    Object.keys(PROMPTS).map(c=>`<button class="navitem" data-c="${c}" aria-current="${c===pcat}">${c}</button>`).join("")
+    + `<button class="navitem" data-c="__tools" aria-current="${pcat==="__tools"}">How to use the tools</button>`;
+  $$("#promptNav .navitem").forEach(b=>b.addEventListener("click",()=>{pcat=b.dataset.c;paintPrompts();}));
+
+  if(pcat==="__tools"){
+    $("#promptMain").innerHTML=`<div class="hint">Editing happens outside this app. Copy a prompt, run it in one of these, then come back and upload the result as a new version.</div>`
+      + TOOLS.map(t=>`<div class="tool">
+        <div class="tool-top"><b>${t.name}</b>
+          <a class="tool-link" href="${t.url}" target="_blank" rel="noopener">Open ${t.name}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+        </div>
+        <ol>${t.steps.map(s=>`<li>${s}</li>`).join("")}</ol>
+      </div>`).join("");
+    return;
+  }
+
+  const items=PROMPTS[pcat].filter(([l,b])=>(l+b).toLowerCase().includes(pq.toLowerCase()));
+  $("#promptMain").innerHTML=
+    `<input class="psearch" placeholder="Search prompts in ${pcat}…" id="pq" value="${pq}">`
+    + `<div class="hint">Measurements in <b>highlight</b> are the parts to change. Edit after pasting — one change per prompt gives the cleanest result.</div>`
+    + (items.length?items.map(([l,b],i)=>`<div class="prompt">
+        <div class="prompt-txt">
+          <div class="prompt-lbl">${l}</div>
+          <div class="prompt-body" id="p${i}">${b}</div>
+        </div>
+        <button class="copybtn" data-i="${i}">Copy</button>
+      </div>`).join("")
+      :`<div class="hint">Nothing matches “${pq}”. Try a shorter word.</div>`);
+
+  const qEl=$("#pq");
+  if(qEl){qEl.addEventListener("input",e=>{pq=e.target.value;paintPrompts();$("#pq").focus();});}
+  $$(".copybtn").forEach(b=>b.addEventListener("click",()=>{
+    const txt=$("#p"+b.dataset.i).innerText;
+    navigator.clipboard?.writeText(txt);
+    b.textContent="Copied";b.classList.add("done");
+    setTimeout(()=>{b.textContent="Copy";b.classList.remove("done")},1400);
+    toast("Prompt copied — paste it into your editing tool");
+  }));
+}
+$("#openAI").addEventListener("click",()=>{paintPrompts();openModal("aiModal");});
+
+/* --- settings / option lists --- */
+let scat=Object.keys(OPTIONS)[0];
+function paintSettings(){
+  $("#setNav").innerHTML=Object.keys(OPTIONS)
+    .map(k=>`<button class="navitem" data-k="${k}" aria-current="${k===scat}">${k}</button>`).join("");
+  $$("#setNav .navitem").forEach(b=>b.addEventListener("click",()=>{scat=b.dataset.k;paintSettings();}));
+
+  $("#setMain").innerHTML=`<div class="hint">Whatever is listed here becomes the dropdown on every design. Removing a value leaves existing designs untouched — it only stops new ones using it.</div>
+    <div class="optgroup">
+      <div class="optgroup-head"><b>${scat}</b><span class="eyebrow">${OPTIONS[scat].length} values</span></div>
+      <div class="optlist">${OPTIONS[scat].map((o,i)=>`<span class="opt">${o}<button data-i="${i}" title="Remove">&times;</button></span>`).join("")}</div>
+      <div class="optadd">
+        <input id="newOpt" placeholder="Add a value to ${scat}…">
+        <button class="btn btn-primary" id="addOpt">Add</button>
+      </div>
+    </div>`;
+
+  $$(".opt button").forEach(b=>b.addEventListener("click",()=>{
+    const gone=OPTIONS[scat].splice(+b.dataset.i,1)[0];
+    paintSettings(); toast(`Removed ${gone} from ${scat}`);
+  }));
+  const add=()=>{
+    const val=$("#newOpt").value.trim(); if(!val)return;
+    if(OPTIONS[scat].includes(val)){toast(`${val} is already in ${scat}`);return;}
+    OPTIONS[scat].push(val); paintSettings(); toast(`Added ${val} to ${scat}`);
+  };
+  $("#addOpt").addEventListener("click",add);
+  $("#newOpt").addEventListener("keydown",e=>{if(e.key==="Enter")add();});
+}
+$("#openSettings").addEventListener("click",()=>{paintSettings();openModal("setModal");});
+
+/* --- toast --- */
+let tT;
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(tT); tT=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+renderBoard();
+</script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+{# The design, whether swapped into the drawer or wrapped in a full page.
+   Every control targets #drawer-body, so htmx re-renders this same partial. #}
+<div class="drawer-inner">
+
+  <div class="drawer-head">
+    {% if editing == "head" %}
+      {% include "designs/partials/_design_head_form.html" %}
+    {% else %}
+      <div class="drawer-title">
+        <span class="mono" style="font-size:10px;letter-spacing:.12em;color:var(--ink-faint)">{{ design.code }}</span>
+        <h2>{{ design.name }}
+          {% if selected %}<em>· {{ selected.display_label }}</em>{% endif %}
+          <a class="iconedit" title="Rename or re-file"
+             href="?{% if selected %}v={{ selected.number }}&amp;{% endif %}edit=head"
+             hx-get="?{% if selected %}v={{ selected.number }}&amp;{% endif %}edit=head"
+             hx-target="#drawer-body" hx-swap="innerHTML">✎</a>
+        </h2>
+      </div>
+    {% endif %}
+
+    {% if transitions %}
+      <form method="post" action="{% url 'status-change' design.code %}"
+            hx-post="{% url 'status-change' design.code %}" hx-target="#drawer-body" hx-swap="innerHTML">
+        {% csrf_token %}
+        {% if selected %}<input type="hidden" name="version" value="{{ selected.number }}">{% endif %}
+        <select class="statuspick st-{{ design.status.tone }}" name="to_status"
+                onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+          <option value="{{ design.status.code }}" selected>{{ design.status.label }}</option>
+          {% for status in transitions %}
+            <option value="{{ status.code }}">→ {{ status.label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    {% else %}
+      <span class="stamp st-{{ design.status.tone }}">{{ design.status.label }}</span>
+    {% endif %}
+
+    <div class="head-actions">
+      {% if reference and selected and selected.pk != reference.pk %}
+        {% if compare %}
+          <a class="btn" href="?v={{ selected.number }}"
+             hx-get="?v={{ selected.number }}" hx-target="#drawer-body" hx-swap="innerHTML" hx-push-url="true">Exit compare</a>
+        {% else %}
+          <a class="btn" href="?v={{ selected.number }}&amp;compare=1"
+             hx-get="?v={{ selected.number }}&amp;compare=1" hx-target="#drawer-body" hx-swap="innerHTML" hx-push-url="true">Compare to reference</a>
+        {% endif %}
+      {% endif %}
+      <a class="btn btn-primary" href="#upload">Upload new version</a>
+      <button class="btn btn-ghost drawer-close" type="button" data-close-overlays>Close</button>
+    </div>
+  </div>
+
+  <div class="viewer">
+    {% if compare %}
+      <div class="compare">
+        {% include "designs/partials/_stage.html" with version=reference %}
+        {% include "designs/partials/_stage.html" with version=selected %}
+      </div>
+    {% elif selected %}
+      {% include "designs/partials/_stage.html" with version=selected %}
+    {% endif %}
+
+    {% if duplicate %}
+      <div class="dupe">
+        This image is byte-for-byte identical to {{ duplicate.display_label }}. It has been kept — a manual
+        round-trip through an external tool makes re-uploads easy — but check you sent the right file.
+      </div>
+    {% endif %}
+
+    {% if selected %}
+      <div class="reqbox">
+        <div class="reqbox-head">
+          <span class="eyebrow reqlabel">What this version was for</span>
+          {% if editing != "req" %}
+            <a class="btn btn-ghost" href="?v={{ selected.number }}&amp;edit=req"
+               hx-get="?v={{ selected.number }}&amp;edit=req"
+               hx-target="#drawer-body" hx-swap="innerHTML">Edit</a>
+          {% endif %}
+        </div>
+
+        {% if editing == "req" %}
+          {# The image never changes; the sentence describing it may. #}
+          <form class="reqedit" method="post"
+                action="{% url 'requirement-set' design.code selected.number %}"
+                hx-post="{% url 'requirement-set' design.code selected.number %}"
+                hx-target="#drawer-body" hx-swap="innerHTML">
+            {% csrf_token %}
+            <textarea class="control" name="requirement" rows="3">{{ selected.requirement }}</textarea>
+            <div class="reqedit-actions">
+              <a class="btn btn-ghost" href="?v={{ selected.number }}"
+                 hx-get="?v={{ selected.number }}" hx-target="#drawer-body" hx-swap="innerHTML">Cancel</a>
+              <button class="btn btn-primary" type="submit">Save description</button>
+            </div>
+          </form>
+        {% else %}
+          <div class="reqtext">{{ selected.requirement|linebreaksbr|default:"Nothing written down." }}</div>
+        {% endif %}
+
+        <div class="byline">
+          {{ selected.created_by.get_full_name|default:selected.created_by.get_username }}
+          · {{ selected.created_at|date:"d M Y, H:i" }}
+        </div>
+        <div class="meta" style="margin-top:10px">
+          <span><b>{{ selected.width }}×{{ selected.height }}</b> px</span>
+          <span><b>{{ selected.file_size|filesizeformat }}</b></span>
+          <span>sha256 <b>{{ selected.content_hash|slice:":12" }}</b></span>
+          <span class="depth {% if selected.depth_from_reference > 3 %}deep{% endif %}">
+            <b>{{ selected.depth_from_reference }}</b> edit{{ selected.depth_from_reference|pluralize }} from the reference
+          </span>
+          <span class="urlnote">Signed URL · expires in {{ signed_url_minutes }} min</span>
+        </div>
+      </div>
+    {% endif %}
+
+    {% include "designs/partials/_contact_sheet.html" %}
+
+    <div class="specs">
+      <div class="specs-head">
+        <span class="eyebrow">Design specification</span>
+        <button class="btn btn-ghost" style="font-size:11.5px;padding:4px 8px"
+                hx-get="{% url 'spec-options' %}" hx-target="#modal-body" hx-swap="innerHTML">Edit option lists</button>
+      </div>
+      {% include "designs/partials/_spec_grid.html" %}
+    </div>
+  </div>
+
+  <aside class="comments">
+    <div class="comments-head">
+      <span class="eyebrow">Activity</span>
+      {% if selected %}<span class="comments-scope">{{ selected.display_label }}</span>{% endif %}
+    </div>
+
+    {% include "designs/partials/_activity.html" %}
+
+    {% if selected %}
+      <div class="composer">
+        <form method="post" action="{% url 'comment-create' design.code selected.number %}"
+              hx-post="{% url 'comment-create' design.code selected.number %}"
+              hx-target="#drawer-body" hx-swap="innerHTML">
+          {% csrf_token %}
+          <textarea name="body" placeholder="Comment on {{ selected.display_label }}…"></textarea>
+          <div class="composer-row">
+            <span class="eyebrow">Posts against the version on screen</span>
+            <button class="btn btn-primary" type="submit">Post</button>
+          </div>
+        </form>
+      </div>
+    {% endif %}
+
+    <div class="aside-panel">
+      {% include "designs/partials/_assets.html" %}
+    </div>
+  </aside>
+</div>

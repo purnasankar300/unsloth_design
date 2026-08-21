@@ -1,0 +1,11 @@
+{# One image on the light table. Links go to the app, never to the bucket. #}
+<div class="stage">
+  <span class="stage-tag">{{ version.display_label }}{% if version.is_reference %} · reference{% endif %}</span>
+  {% if version.is_reference %}
+    <span class="stage-lock">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      Locked
+    </span>
+  {% endif %}
+  <img src="{% url 'version-image' version.pk %}" alt="{{ design.name }} {{ version.display_label }}">
+</div>

@@ -1,0 +1,40 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Insights</h1>
+<p style="max-width:70ch;color:#666">
+  These three numbers decide whether a future version should automate the image editing
+  via an API. Until there is real data, that decision is guesswork.
+</p>
+
+<h2>1. Versions per design — how many revision rounds actually happen</h2>
+<ul>
+  <li><b>{{ design_count }}</b> designs, <b>{{ version_total }}</b> versions total</li>
+  <li>Mean <b>{{ versions_mean }}</b> versions per design, highest <b>{{ versions_max }}</b></li>
+  <li><b>{{ reference_branches }}</b> versions branched straight off the reference — the re-branch case</li>
+</ul>
+<table>
+  <thead><tr><th>Versions</th><th>Designs</th></tr></thead>
+  <tbody>{% for bucket, count in distribution %}<tr><td>{{ bucket }}</td><td>{{ count }}</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2>2. Uploads per day (last {{ window_days }} days)</h2>
+<p>Busiest day: <b>{{ busiest_day }}</b> uploads. Average image size <b>{{ avg_size_mb }} MB</b>.</p>
+<table>
+  <thead><tr><th>Day</th><th>Uploads</th></tr></thead>
+  <tbody>{% for row in daily %}<tr><td>{{ row.day }}</td><td>{{ row.total }}</td></tr>
+  {% empty %}<tr><td colspan="2">No uploads yet.</td></tr>{% endfor %}</tbody>
+</table>
+
+<h3>Per user</h3>
+<table>
+  <thead><tr><th>User</th><th>Uploads</th></tr></thead>
+  <tbody>{% for row in by_user %}<tr><td>{{ row.username }}</td><td>{{ row.total }}</td></tr>
+  {% empty %}<tr><td colspan="2">No uploads yet.</td></tr>{% endfor %}</tbody>
+</table>
+
+<h2>3. Time from creation to approval</h2>
+<ul>
+  <li><b>{{ approved_count }}</b> approved, <b>{{ unapproved_count }}</b> still open</li>
+  <li>Median <b>{{ median_lead }}</b>, mean <b>{{ mean_lead }}</b></li>
+</ul>
+{% endblock %}

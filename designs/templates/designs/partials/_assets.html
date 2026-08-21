@@ -1,0 +1,21 @@
+{# The real-world facts. The images are a visualisation aid; these are what a
+   garment is actually made from. #}
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+  <span class="eyebrow">Authoritative assets</span>
+  <a class="btn btn-ghost" style="margin-left:auto;font-size:11px;padding:3px 8px"
+     href="{% url 'assets-edit' design.code %}"
+     hx-get="{% url 'assets-edit' design.code %}" hx-target="#modal-body" hx-swap="innerHTML">Edit</a>
+</div>
+<dl>
+  <div class="asset"><dt>Logo</dt>
+    <dd>{% if design.logo_file %}{{ design.logo_file.name|cut:"assets/logos/" }}{% else %}—{% endif %}</dd></div>
+  <div class="asset"><dt>Colour</dt>
+    <dd>{% if design.colour_hex %}<span class="chip" style="background:{{ design.colour_hex }}"></span>{% endif %}{{ design.colour_code|default:"—" }}</dd></div>
+  {% for measurement in design.measurements.all %}
+    <div class="asset"><dt>{{ measurement.name }}</dt><dd>{{ measurement.value_cm }} cm</dd></div>
+  {% endfor %}
+</dl>
+<p class="caveat">
+  Edited images are a visualisation aid, not a manufacturing spec. Exact shade matching is
+  not achievable and logo artwork is redrawn — these fields are the record that is.
+</p>

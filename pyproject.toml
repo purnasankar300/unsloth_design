@@ -1,0 +1,19 @@
+[project]
+name = "selvedge"
+version = "0.1.0"
+description = "Garment design tracker — versioned image collaboration with a status pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "Django>=5.2,<5.3",
+    "psycopg[binary]>=3.2",
+    "django-storages[s3]>=1.14",
+    "django-simple-history>=3.7",
+    "Pillow>=11.0",
+    "django-environ>=0.12",
+]
+
+[dependency-groups]
+deploy = ["gunicorn>=23.0", "whitenoise>=6.8"]
+
+[tool.uv]
+package = false

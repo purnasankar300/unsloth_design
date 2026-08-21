@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ design.code }} assets · Selvedge{% endblock %}
+
+{# The assets modal without JavaScript. #}
+{% block content %}
+<div class="wrap">
+  <div class="crumb"><a href="{% url 'design-list' %}">Design board</a> / <a href="{{ design.get_absolute_url }}">{{ design.code }}</a> / Assets</div>
+  <div class="modal-inner" style="border:1px solid var(--rule);border-radius:3px;overflow:hidden">
+    {% include "designs/partials/_assets_modal.html" %}
+  </div>
+</div>
+{% endblock %}

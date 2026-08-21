@@ -1,0 +1,35 @@
+{# The specification. Field names come from the SpecField table — none of them is
+   written here, so the team can add, rename or retire attributes in admin.
+   The drop and the category are not spec fields: they make up the design code. #}
+<div class="spec-grid">
+  <div class="spec-cell readonly">
+    <label class="eyebrow">Drop</label>
+    <div class="value mono">{{ design.season.code }}</div>
+  </div>
+  <div class="spec-cell readonly">
+    <label class="eyebrow">Category</label>
+    <div class="value">{{ design.category.label }}</div>
+  </div>
+
+  {% for field, options, current in spec_rows %}
+    <div class="spec-cell">
+      <label class="eyebrow" for="spec-{{ field.code }}">{{ field.label }}</label>
+      <form method="post" action="{% url 'spec-set' design.code %}">
+        {% csrf_token %}
+        <input type="hidden" name="field" value="{{ field.code }}">
+        {% if selected %}<input type="hidden" name="v" value="{{ selected.number }}">{% endif %}
+        <select id="spec-{{ field.code }}" name="option"
+                hx-post="{% url 'spec-set' design.code %}" hx-trigger="change"
+                hx-target="#drawer-body" hx-swap="innerHTML" hx-include="closest form">
+          <option value="">—</option>
+          {% for option in options %}
+            <option value="{{ option.pk }}" {% if current and option.pk == current.pk %}selected{% endif %}>
+              {{ option.label }}{% if not option.is_active %} (retired){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <noscript><button class="btn" style="margin-top:5px;font-size:11px;padding:3px 8px" type="submit">Set</button></noscript>
+      </form>
+    </div>
+  {% endfor %}
+</div>

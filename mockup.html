@@ -1,0 +1,670 @@
+<title>Selvedge</title>
+<style>
+:root{
+  --paper:#EDEFF3; --card:#FFFFFF; --card-2:#F6F7F9; --sunk:#E4E7ED;
+  --ink:#161A22; --ink-2:#59616F; --ink-3:#8A93A2;
+  --rule:#D6DAE2; --rule-2:#C3C9D4;
+  --accent:#2E3F8F; --accent-soft:#E3E7F6; --on-accent:#FFFFFF;
+  --ok:#1D7A5B; --ok-soft:#DCEFE7;
+  --warn:#A9701A; --warn-soft:#F5EAD7;
+  --stop:#A93A2F; --stop-soft:#F6E2DF;
+  --hold:#5E6675; --hold-soft:#E5E8EE;
+  --shadow:0 1px 2px rgba(22,26,34,.05), 0 10px 26px -18px rgba(22,26,34,.35);
+  --display:Optima,Candara,"Gill Sans","Gill Sans MT","Trebuchet MS",sans-serif;
+  --body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1219; --card:#171B23; --card-2:#1D222B; --sunk:#12161D;
+    --ink:#E6EAF1; --ink-2:#9BA5B6; --ink-3:#6E7889;
+    --rule:#282E39; --rule-2:#343C4A;
+    --accent:#98A8F2; --accent-soft:#1F2540; --on-accent:#0F1219;
+    --ok:#54C298; --ok-soft:#15302A;
+    --warn:#D9A44E; --warn-soft:#332616;
+    --stop:#E2796A; --stop-soft:#341E1B;
+    --hold:#8B94A4; --hold-soft:#22272F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 26px -18px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1219; --card:#171B23; --card-2:#1D222B; --sunk:#12161D;
+  --ink:#E6EAF1; --ink-2:#9BA5B6; --ink-3:#6E7889;
+  --rule:#282E39; --rule-2:#343C4A;
+  --accent:#98A8F2; --accent-soft:#1F2540; --on-accent:#0F1219;
+  --ok:#54C298; --ok-soft:#15302A;
+  --warn:#D9A44E; --warn-soft:#332616;
+  --stop:#E2796A; --stop-soft:#341E1B;
+  --hold:#8B94A4; --hold-soft:#22272F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 26px -18px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--body); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:var(--display); font-weight:600; text-wrap:balance; margin:0}
+a{color:var(--accent)}
+button{font:inherit; color:inherit; cursor:pointer}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+
+/* ---------- shell ---------- */
+.wrap{max-width:1400px; margin:0 auto; padding:0 24px 72px}
+.topbar{
+  border-bottom:1px solid var(--rule); background:var(--card);
+  position:sticky; top:0; z-index:20;
+}
+.topbar-in{
+  max-width:1400px; margin:0 auto; padding:14px 24px;
+  display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+}
+.brand{display:flex; align-items:baseline; gap:10px; margin-right:auto}
+.brand .mark{
+  font-family:var(--display); font-size:22px; font-weight:600;
+  letter-spacing:-.015em; color:var(--ink);
+}
+.brand .sub{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-3);
+}
+.userchip{
+  display:flex; align-items:center; gap:8px; padding:4px 12px 4px 4px;
+  border:1px solid var(--rule); border-radius:999px; background:var(--card-2);
+  font-size:13px; color:var(--ink-2);
+}
+.avatar{
+  width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  background:var(--accent-soft); color:var(--accent);
+  font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:.02em;
+}
+.btn{
+  border:1px solid var(--rule-2); background:var(--card); color:var(--ink);
+  padding:7px 14px; border-radius:6px; font-size:13.5px;
+}
+.btn:hover{border-color:var(--ink-3)}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent)}
+.btn-primary:hover{filter:brightness(1.08)}
+
+.tabs{display:flex; gap:2px; border-bottom:1px solid var(--rule); margin:0 0 26px}
+.tab{
+  border:none; background:none; padding:13px 2px; margin-right:26px;
+  font-family:var(--mono); font-size:11.5px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3);
+  border-bottom:2px solid transparent; margin-bottom:-1px;
+}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--accent)}
+.tab:hover{color:var(--ink-2)}
+.screen[hidden]{display:none}
+
+/* ---------- woven swatch placeholders ---------- */
+.sw{
+  background-color:hsl(var(--h,220) var(--s,32%) var(--l,48%));
+  position:relative; overflow:hidden;
+}
+.sw::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(160deg, rgba(255,255,255,.14), rgba(0,0,0,.16));
+}
+.sw.twill{background-image:repeating-linear-gradient(48deg,rgba(255,255,255,.16) 0 3px,transparent 3px 9px)}
+.sw.check{background-image:
+  repeating-linear-gradient(90deg,rgba(255,255,255,.15) 0 7px,transparent 7px 22px),
+  repeating-linear-gradient(0deg,rgba(255,255,255,.15) 0 7px,transparent 7px 22px)}
+.sw.plain{background-image:
+  repeating-linear-gradient(0deg,rgba(0,0,0,.13) 0 2px,transparent 2px 4px),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.13) 0 2px,transparent 2px 4px)}
+.sw.herring{background-image:
+  repeating-linear-gradient(45deg,rgba(255,255,255,.16) 0 2px,transparent 2px 7px),
+  repeating-linear-gradient(-45deg,rgba(255,255,255,.11) 0 2px,transparent 2px 7px)}
+.sw.stripe{background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0 4px,transparent 4px 16px)}
+.sw.dobby{background-image:radial-gradient(circle at 4px 4px, rgba(255,255,255,.22) 1.4px, transparent 1.6px); background-size:12px 12px}
+.sw.rib{background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 3px,transparent 3px 10px)}
+.sw.block{background-image:
+  radial-gradient(circle at 10px 10px, rgba(255,255,255,.24) 3px, transparent 3.5px),
+  radial-gradient(circle at 26px 26px, rgba(0,0,0,.18) 3px, transparent 3.5px);
+  background-size:32px 32px}
+
+/* ---------- gallery ---------- */
+.pagehead{display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap; margin-bottom:18px}
+.pagehead h1{font-size:30px; letter-spacing:-.01em}
+.count{font-family:var(--mono); font-size:12px; color:var(--ink-3); padding-bottom:5px}
+.filters{
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+  padding-bottom:20px; margin-bottom:24px;
+  border-bottom:1px dashed var(--rule-2);
+}
+.pill{
+  border:1px solid var(--rule); background:var(--card); border-radius:999px;
+  padding:5px 13px; font-size:12.5px; color:var(--ink-2);
+}
+.pill[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--paper)}
+.search{
+  margin-left:auto; border:1px solid var(--rule); background:var(--card);
+  border-radius:6px; padding:7px 12px; font-size:13.5px; color:var(--ink);
+  min-width:210px; font-family:var(--body);
+}
+.search::placeholder{color:var(--ink-3)}
+
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(248px,1fr)); gap:20px}
+.card{
+  background:var(--card); border:1px solid var(--rule); border-radius:8px;
+  overflow:hidden; box-shadow:var(--shadow); text-align:left; padding:0;
+  display:flex; flex-direction:column; transition:transform .14s ease, border-color .14s ease;
+}
+.card:hover{transform:translateY(-2px); border-color:var(--rule-2)}
+.thumb{aspect-ratio:4/5; position:relative}
+.thumb .tag{
+  position:absolute; left:8px; bottom:8px; z-index:1;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase;
+  background:rgba(10,12,16,.62); color:#F2F4F8; padding:3px 7px; border-radius:3px;
+  backdrop-filter:blur(2px);
+}
+.card-body{padding:13px 14px 15px; display:flex; flex-direction:column; gap:3px}
+.code{
+  font-family:var(--mono); font-size:14px; font-weight:600; letter-spacing:-.01em;
+  color:var(--ink);
+}
+.label{font-size:13.5px; color:var(--ink-2)}
+.card-foot{
+  margin-top:9px; padding-top:9px; border-top:1px dashed var(--rule);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  font-family:var(--mono); font-size:11px; color:var(--ink-3);
+}
+.badge{
+  font-family:var(--mono); font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+  padding:3px 8px; border-radius:3px; white-space:nowrap;
+}
+.b-draft{background:var(--hold-soft); color:var(--hold)}
+.b-review{background:var(--accent-soft); color:var(--accent)}
+.b-revision{background:var(--warn-soft); color:var(--warn)}
+.b-approved{background:var(--ok-soft); color:var(--ok)}
+.b-hold{background:var(--hold-soft); color:var(--hold)}
+.b-dropped{background:var(--stop-soft); color:var(--stop)}
+
+/* ---------- detail ---------- */
+.detail{display:grid; grid-template-columns:246px minmax(0,1fr) 300px; gap:26px; align-items:start}
+.panel{
+  background:var(--card); border:1px solid var(--rule); border-radius:8px;
+  box-shadow:var(--shadow);
+}
+.panel-head{
+  padding:12px 15px; border-bottom:1px solid var(--rule);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.panel-head h2{
+  font-family:var(--mono); font-size:11px; letter-spacing:.11em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:600;
+}
+.panel-body{padding:15px}
+
+.designhead{margin-bottom:22px}
+.designhead .code{font-size:24px}
+.designhead h1{font-size:19px; font-weight:500; color:var(--ink-2); margin-top:2px}
+.crumb{
+  font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-3); margin-bottom:8px;
+}
+.crumb a{text-decoration:none}
+
+/* version tree */
+.tree{list-style:none; margin:0; padding:0; overflow-x:auto}
+.tree ul{list-style:none; margin:0; padding-left:17px; position:relative}
+.tree ul::before{
+  content:""; position:absolute; left:5px; top:0; bottom:15px;
+  border-left:1px dashed var(--rule-2);
+}
+.tree li{position:relative}
+.tree ul li::before{
+  content:""; position:absolute; left:-12px; top:19px; width:11px;
+  border-top:1px dashed var(--rule-2);
+}
+.node{
+  display:flex; align-items:center; gap:9px; width:100%;
+  padding:6px 8px; margin:2px 0; border:1px solid transparent; border-radius:5px;
+  background:none; text-align:left;
+}
+.node:hover{background:var(--card-2)}
+.node[aria-current="true"]{background:var(--accent-soft); border-color:var(--accent)}
+.node .nsw{width:24px; height:30px; border-radius:2px; flex:none}
+.node .nmeta{min-width:0; display:flex; flex-direction:column; line-height:1.3}
+.node .nv{font-family:var(--mono); font-size:12px; font-weight:600}
+.node .nby{font-size:11px; color:var(--ink-3); white-space:nowrap}
+.star{margin-left:auto; color:var(--ok); font-size:12px; flex:none}
+.rootnote{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-3); padding:0 8px 6px 41px;
+}
+.rebranch{
+  margin:8px 0 2px; width:100%; border:1px dashed var(--rule-2); background:none;
+  color:var(--accent); border-radius:5px; padding:7px; font-size:12.5px;
+}
+.rebranch:hover{background:var(--accent-soft)}
+
+/* center */
+.viewer{position:relative; aspect-ratio:4/5; max-height:520px; border-radius:8px 8px 0 0; overflow:hidden}
+.viewer .urlnote{
+  position:absolute; right:10px; top:10px; z-index:1;
+  font-family:var(--mono); font-size:10px; letter-spacing:.05em;
+  background:rgba(10,12,16,.62); color:#F2F4F8; padding:4px 9px; border-radius:4px;
+  backdrop-filter:blur(2px);
+}
+.reqbox{padding:16px 18px; border-bottom:1px dashed var(--rule)}
+.reqlabel{
+  font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); margin-bottom:5px;
+}
+.reqtext{font-size:15px; color:var(--ink)}
+.byline{margin-top:9px; font-size:12.5px; color:var(--ink-3)}
+.meta{
+  display:flex; gap:0; overflow-x:auto; border-bottom:1px solid var(--rule);
+  font-family:var(--mono); font-size:11.5px;
+}
+.meta div{padding:11px 16px; border-right:1px dashed var(--rule); white-space:nowrap}
+.meta div:last-child{border-right:none}
+.meta span{display:block; font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); margin-bottom:2px}
+.meta b{font-weight:600; font-variant-numeric:tabular-nums}
+
+.guide{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px}
+.gcard{border:1px solid var(--rule); border-radius:6px; padding:13px 14px; background:var(--card-2)}
+.gcard h3{font-size:15px; display:flex; align-items:center; gap:7px}
+.gcard h3 a{text-decoration:none}
+.gcard ol{margin:9px 0 0; padding-left:17px; font-size:12.5px; color:var(--ink-2); line-height:1.6}
+.admintag{
+  display:inline-block; margin-top:11px; font-family:var(--mono); font-size:9.5px;
+  letter-spacing:.07em; text-transform:uppercase; color:var(--ink-3);
+  border:1px dashed var(--rule-2); border-radius:3px; padding:2px 6px;
+}
+.ext{font-size:11px; color:var(--ink-3)}
+
+.comment{display:flex; gap:11px; padding:13px 0; border-bottom:1px dashed var(--rule)}
+.comment:last-of-type{border-bottom:none}
+.comment .cbody{min-width:0}
+.chead{display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; margin-bottom:2px}
+.cname{font-weight:600; font-size:13.5px}
+.ctime{font-family:var(--mono); font-size:11px; color:var(--ink-3)}
+.ctext{font-size:14px; color:var(--ink-2)}
+.composer{display:flex; gap:11px; padding-top:14px; border-top:1px solid var(--rule); margin-top:4px}
+.composer textarea{
+  flex:1; min-height:62px; resize:vertical; font:inherit; font-size:13.5px;
+  padding:9px 11px; border:1px solid var(--rule); border-radius:6px;
+  background:var(--card-2); color:var(--ink);
+}
+.composer textarea::placeholder{color:var(--ink-3)}
+
+/* right rail */
+.pipeline{display:flex; flex-wrap:wrap; gap:6px}
+.step{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.05em;
+  padding:4px 9px; border-radius:3px; border:1px solid var(--rule);
+  color:var(--ink-3); background:var(--card-2);
+}
+.step.done{color:var(--ink-2)}
+.step.current{background:var(--ok-soft); color:var(--ok); border-color:var(--ok)}
+.step.aside{border-style:dashed}
+.note{
+  margin-top:11px; font-size:11.5px; color:var(--ink-3);
+  border-left:2px solid var(--warn); padding-left:9px;
+}
+.trail{list-style:none; margin:0; padding:0}
+.trail li{padding:11px 0; border-bottom:1px dashed var(--rule); font-size:12.5px}
+.trail li:last-child{border-bottom:none}
+.tmove{font-family:var(--mono); font-size:11.5px; color:var(--ink)}
+.tmove i{color:var(--ink-3); font-style:normal}
+.twho{color:var(--ink-2); margin-top:3px}
+.tstamp{font-family:var(--mono); font-size:10.5px; color:var(--ink-3)}
+.tcomment{margin-top:4px; color:var(--ink-2); font-style:italic}
+.selfflag{
+  display:inline-block; margin-top:6px; font-family:var(--mono); font-size:9.5px;
+  letter-spacing:.06em; text-transform:uppercase;
+  background:var(--warn-soft); color:var(--warn); padding:2px 7px; border-radius:3px;
+}
+.asset{display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px dashed var(--rule); font-size:13px}
+.asset:last-of-type{border-bottom:none}
+.asset dt{color:var(--ink-3); font-size:12px}
+.asset dd{margin:0; font-family:var(--mono); font-size:12px; text-align:right; color:var(--ink)}
+.pantone{display:inline-flex; align-items:center; gap:6px}
+.chip{width:13px; height:13px; border-radius:2px; background:#4F7C82; border:1px solid rgba(0,0,0,.25)}
+.caveat{margin-top:13px; font-size:11.5px; color:var(--ink-3); line-height:1.5}
+dl{margin:0}
+
+@media (max-width:1080px){
+  .detail{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .wrap{padding:0 16px 56px}
+  .topbar-in{padding:12px 16px}
+  .grid{grid-template-columns:1fr}
+  .pagehead h1{font-size:25px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important}
+}
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <span class="mark">Selvedge</span>
+      <span class="sub">Garment design tracker</span>
+    </div>
+    <div class="userchip"><span class="avatar">PR</span> Poorna R.</div>
+    <button class="btn btn-primary">New design</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-screen="list">Designs</button>
+    <button class="tab" role="tab" aria-selected="false" data-screen="detail">Design detail</button>
+  </div>
+
+  <!-- ============ SCREEN 1: GALLERY ============ -->
+  <section class="screen" id="screen-list">
+    <div class="pagehead">
+      <h1>Designs</h1>
+      <span class="count">8 of 8 &middot; SS26 / AW26</span>
+    </div>
+
+    <div class="filters">
+      <button class="pill" aria-pressed="true">All categories</button>
+      <button class="pill" aria-pressed="false">Shirt</button>
+      <button class="pill" aria-pressed="false">Kurta</button>
+      <button class="pill" aria-pressed="false">Dress</button>
+      <button class="pill" aria-pressed="false">Trouser</button>
+      <button class="pill" aria-pressed="false">Jacket</button>
+      <button class="pill" aria-pressed="false">Any status</button>
+      <input class="search" type="search" placeholder="Search code or name" />
+    </div>
+
+    <div class="grid" id="gallery"></div>
+  </section>
+
+  <!-- ============ SCREEN 2: DETAIL ============ -->
+  <section class="screen" id="screen-detail" hidden>
+    <div class="designhead">
+      <div class="crumb"><a href="#" data-goto="list">Designs</a> / Kurta / SS26</div>
+      <div class="code">SS26-KURTA-003</div>
+      <h1>Block-print Kurta</h1>
+    </div>
+
+    <div class="detail">
+      <!-- LEFT: version tree -->
+      <div class="panel">
+        <div class="panel-head"><h2>Versions</h2><span class="ctime">11</span></div>
+        <div class="panel-body">
+          <ul class="tree" id="tree"></ul>
+          <div class="rootnote">Tree, not a chain &mdash; re-branch when edits degrade</div>
+          <button class="rebranch">&#8617; Branch from reference (v1)</button>
+        </div>
+      </div>
+
+      <!-- CENTER -->
+      <div style="display:flex; flex-direction:column; gap:20px; min-width:0">
+        <div class="panel">
+          <div class="viewer sw" id="viewer">
+            <span class="urlnote">Signed URL &middot; expires 10:00</span>
+          </div>
+          <div class="reqbox">
+            <div class="reqlabel">Requirement for <span id="v-title">v9</span></div>
+            <div class="reqtext" id="v-req"></div>
+            <div class="byline" id="v-by"></div>
+          </div>
+          <div class="meta" id="v-meta"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Edit this outside the app</h2></div>
+          <div class="panel-body">
+            <div class="guide">
+              <div class="gcard">
+                <h3><a href="https://gemini.google.com" target="_blank" rel="noopener">Google Gemini chat</a> <span class="ext">&#8599;</span></h3>
+                <ol>
+                  <li>Download the version image from the viewer above.</li>
+                  <li>Open a new chat, attach the image.</li>
+                  <li>Describe one change only &mdash; colour, or sleeve, not both.</li>
+                  <li>Download the result, come back, upload as a new version.</li>
+                </ol>
+                <span class="admintag">Editable in admin</span>
+              </div>
+              <div class="gcard">
+                <h3><a href="https://labs.google/flow" target="_blank" rel="noopener">Google Flow</a> <span class="ext">&#8599;</span></h3>
+                <ol>
+                  <li>Start a project, upload the reference as the base frame.</li>
+                  <li>Use the edit brush to mask only the panel you are changing.</li>
+                  <li>Export at full resolution &mdash; not the preview size.</li>
+                  <li>Upload the export as a new version.</li>
+                </ol>
+                <span class="admintag">Editable in admin</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Comments on <span id="c-scope">v9</span></h2>
+            <span class="ctime">on this version only</span>
+          </div>
+          <div class="panel-body">
+            <div id="comments"></div>
+            <div class="composer">
+              <span class="avatar">PR</span>
+              <textarea placeholder="Comment on this version&hellip;"></textarea>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:10px">
+              <button class="btn btn-primary">Post comment</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div style="display:flex; flex-direction:column; gap:20px">
+        <div class="panel">
+          <div class="panel-head"><h2>Status</h2></div>
+          <div class="panel-body">
+            <div class="pipeline">
+              <span class="step done">Draft</span>
+              <span class="step done">In review</span>
+              <span class="step done">Revision requested</span>
+              <span class="step current">Approved</span>
+              <span class="step aside">On hold</span>
+              <span class="step aside">Dropped</span>
+            </div>
+            <div class="note">Placeholder pipeline. Stage names and legal transitions are not settled (spec &sect;9) &mdash; these come from the database, not from code.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Audit trail</h2></div>
+          <div class="panel-body">
+            <ul class="trail">
+              <li>
+                <div class="tmove">Revision requested <i>&rarr;</i> Approved</div>
+                <div class="twho">Aarti S. &middot; <span class="tstamp">18 Aug 2026, 11:42 IST</span></div>
+                <div class="tcomment">&ldquo;v9 is the one. Neckline finally holds.&rdquo;</div>
+                <span class="selfflag">Self-approved &mdash; creator and approver are the same user</span>
+              </li>
+              <li>
+                <div class="tmove">In review <i>&rarr;</i> Revision requested</div>
+                <div class="twho">Devika M. &middot; <span class="tstamp">16 Aug 2026, 17:05 IST</span></div>
+                <div class="tcomment">&ldquo;Block spacing drifted on v6. Go back to the reference.&rdquo;</div>
+              </li>
+              <li>
+                <div class="tmove">Draft <i>&rarr;</i> In review</div>
+                <div class="twho">Aarti S. &middot; <span class="tstamp">14 Aug 2026, 09:20 IST</span></div>
+              </li>
+              <li>
+                <div class="tmove">Created</div>
+                <div class="twho">Aarti S. &middot; <span class="tstamp">12 Aug 2026, 15:58 IST</span></div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Authoritative assets</h2></div>
+          <div class="panel-body">
+            <dl>
+              <div class="asset"><dt>Logo artwork</dt><dd>brand-mark-master.ai</dd></div>
+              <div class="asset"><dt>Colour</dt><dd><span class="pantone"><span class="chip"></span>19-4324 TCX</span></dd></div>
+              <div class="asset"><dt>Chest</dt><dd>104 cm</dd></div>
+              <div class="asset"><dt>Body length</dt><dd>78 cm</dd></div>
+              <div class="asset"><dt>Sleeve</dt><dd>61 cm</dd></div>
+            </dl>
+            <div class="caveat">The images above are a visualisation aid, not a manufacturing spec. Logo artwork and Pantone are never taken from an edited image &mdash; only from these fields.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const designs = [
+  {code:"SS26-SHIRT-014", name:"Indigo Panel Shirt",     status:["In review","b-review"],   v:7,  by:"Nikhil B.",  when:"2 hours ago",   sw:"twill",   h:222, s:38, l:42},
+  {code:"SS26-KURTA-003", name:"Block-print Kurta",      status:["Approved","b-approved"],  v:11, by:"Aarti S.",   when:"today, 11:42",  sw:"block",   h:190, s:24, l:40},
+  {code:"AW26-JKT-021",   name:"Quilted Field Jacket",   status:["Approved","b-approved"],  v:4,  by:"Devika M.",  when:"yesterday",     sw:"rib",     h:96,  s:14, l:34},
+  {code:"SS26-DRESS-008", name:"Tiered Poplin Dress",    status:["Draft","b-draft"],        v:1,  by:"Poorna R.",  when:"20 min ago",    sw:"plain",   h:38,  s:30, l:66},
+  {code:"SS26-TRSR-002",  name:"Wide-leg Linen Trouser", status:["In review","b-review"],   v:5,  by:"Aarti S.",   when:"3 hours ago",   sw:"herring", h:46,  s:16, l:56},
+  {code:"AW26-SHIRT-030", name:"Corduroy Overshirt",     status:["On hold","b-hold"],       v:3,  by:"Nikhil B.",  when:"6 days ago",    sw:"stripe",  h:22,  s:34, l:38},
+  {code:"SS26-DRESS-012", name:"Bias-cut Slip",          status:["Revision requested","b-revision"], v:6, by:"Devika M.", when:"yesterday", sw:"dobby", h:344, s:22, l:52},
+  {code:"AW26-KURTA-009", name:"Wool-blend Nehru",       status:["Dropped","b-dropped"],    v:2,  by:"Poorna R.",  when:"2 weeks ago",   sw:"check",   h:210, s:10, l:30}
+];
+
+document.getElementById("gallery").innerHTML = designs.map(d => `
+  <button class="card">
+    <div class="thumb sw ${d.sw}" style="--h:${d.h};--s:${d.s}%;--l:${d.l}%">
+      <span class="tag">Thumbnail &middot; 400px</span>
+    </div>
+    <div class="card-body">
+      <div class="code">${d.code}</div>
+      <div class="label">${d.name}</div>
+      <div class="card-foot">
+        <span class="badge ${d.status[1]}">${d.status[0]}</span>
+        <span>${d.v} version${d.v > 1 ? "s" : ""}</span>
+        <span>&middot;</span>
+        <span>${d.by}, ${d.when}</span>
+      </div>
+    </div>
+  </button>`).join("");
+
+// ---- version tree for SS26-KURTA-003 ----
+const V = {
+  v1:  {label:"v1", note:"reference", by:"Aarti S.",  date:"12 Aug", parent:"—", sw:"block",   h:190,s:24,l:40, dim:"3024 × 4032", size:"6.4 MB", hash:"sha256 4c1e9a…",
+        req:"Original reference photo from the Jaipur sampling trip. Hand-block print, natural indigo, unbleached cotton.",
+        comments:[["DM","Devika M.","12 Aug, 16:20","Good light on this one. Every branch should come back here rather than to an edited copy."]]},
+  v2:  {label:"v2", by:"Aarti S.",  date:"12 Aug", parent:"v1", sw:"block", h:196,s:26,l:42, dim:"2048 × 2560", size:"3.4 MB", hash:"sha256 b70d21…",
+        req:"Same silhouette, straighten the hem and drop the background out to plain white.", comments:[]},
+  v3:  {label:"v3", by:"Nikhil B.", date:"13 Aug", parent:"v2", sw:"block", h:204,s:26,l:44, dim:"2048 × 2560", size:"3.2 MB", hash:"sha256 91ff08…",
+        req:"Mandarin collar instead of the round neck.", comments:[]},
+  v4:  {label:"v4", by:"Nikhil B.", date:"13 Aug", parent:"v3", sw:"block", h:210,s:24,l:46, dim:"2048 × 2560", size:"3.0 MB", hash:"sha256 2ab4c7…",
+        req:"Lengthen the sleeve to full, keep the collar from v3.", comments:[]},
+  v5:  {label:"v5", by:"Nikhil B.", date:"14 Aug", parent:"v4", sw:"block", h:214,s:20,l:48, dim:"2048 × 2560", size:"2.9 MB", hash:"sha256 55e0d3…",
+        req:"Side slits, knee height.", comments:[]},
+  v6:  {label:"v6", by:"Nikhil B.", date:"14 Aug", parent:"v5", sw:"plain", h:218,s:12,l:52, dim:"2048 × 2560", size:"2.7 MB", hash:"sha256 e3c6b1…",
+        req:"Tighten the placket. Print has gone soft after five rounds — flagging it.",
+        comments:[["DM","Devika M.","16 Aug, 17:02","Six edits deep and the block print has turned into mush. Stop this branch."],
+                  ["AS","Aarti S.","16 Aug, 17:11","Agreed. Re-branching from v1."]]},
+  v7:  {label:"v7", note:"re-branched from v1", by:"Aarti S.", date:"16 Aug", parent:"v1", sw:"block", h:192,s:28,l:38, dim:"2048 × 2560", size:"3.5 MB", hash:"sha256 7d14fa…",
+        req:"Back to the original reference. Mandarin collar and full sleeve in one pass this time, so the print only gets edited once.",
+        comments:[["DM","Devika M.","17 Aug, 09:40","Print is intact. This is the right base."]]},
+  v8:  {label:"v8", by:"Nikhil B.", date:"17 Aug", parent:"v7", sw:"block", h:188,s:30,l:36, dim:"2048 × 2560", size:"3.3 MB", hash:"sha256 0ba992…",
+        req:"Side slits added, same single-pass approach.", comments:[]},
+  v9:  {label:"v9", note:"approved", by:"Aarti S.", date:"18 Aug", parent:"v7", sw:"block", h:186,s:32,l:34, dim:"2048 × 2560", size:"3.1 MB", hash:"sha256 9f2ac4…",
+        req:"Slits at knee, cuff narrowed by 1 cm, print left completely untouched. Colour here is indicative only — match to the Pantone in the record, not to this image.",
+        comments:[["DM","Devika M.","18 Aug, 10:15","Neckline sits right and the block spacing survived. This is the one."],
+                  ["NB","Nikhil B.","18 Aug, 10:31","Agreed. Note the cuff is 1 cm narrower than the v7 branch."],
+                  ["AS","Aarti S.","18 Aug, 11:40","Marking approved. Measurements in the record are the ones to cut from."]]},
+  v10: {label:"v10", by:"Devika M.", date:"17 Aug", parent:"v1", sw:"stripe", h:180,s:26,l:42, dim:"2048 × 2560", size:"3.6 MB", hash:"sha256 c40e77…",
+        req:"Separate exploration off the reference — striped variant, kept alive in case the print does not clear costing.", comments:[]},
+  v11: {label:"v11", by:"Devika M.", date:"17 Aug", parent:"v10", sw:"stripe", h:176,s:28,l:40, dim:"2048 × 2560", size:"3.4 MB", hash:"sha256 1e88b0…",
+        req:"Wider stripe pitch on the v10 variant.", comments:[]}
+};
+
+const treeShape = [
+  {k:"v1", kids:[
+    {k:"v2", kids:[{k:"v3", kids:[{k:"v4", kids:[{k:"v5", kids:[{k:"v6", kids:[]}]}]}]}]},
+    {k:"v7", kids:[{k:"v8", kids:[]}, {k:"v9", kids:[]}]},
+    {k:"v10", kids:[{k:"v11", kids:[]}]}
+  ]}
+];
+
+function nodeHTML(n){
+  const d = V[n.k];
+  const approved = d.note === "approved";
+  return `<li>
+    <button class="node" data-v="${n.k}" ${n.k === selected ? 'aria-current="true"' : ""}>
+      <span class="nsw sw ${d.sw}" style="--h:${d.h};--s:${d.s}%;--l:${d.l}%"></span>
+      <span class="nmeta">
+        <span class="nv">${d.label}${d.note && !approved ? ' <i style="font-style:normal;color:var(--ink-3);font-weight:400">' + d.note + "</i>" : ""}</span>
+        <span class="nby">${d.by} &middot; ${d.date}</span>
+      </span>
+      ${approved ? '<span class="star" title="Approved version">&#9679;</span>' : ""}
+    </button>
+    ${n.kids.length ? "<ul>" + n.kids.map(nodeHTML).join("") + "</ul>" : ""}
+  </li>`;
+}
+
+let selected = "v9";
+
+function renderTree(){
+  document.getElementById("tree").innerHTML = treeShape.map(nodeHTML).join("");
+  document.querySelectorAll(".node").forEach(b => {
+    b.addEventListener("click", () => { selected = b.dataset.v; renderTree(); renderVersion(); });
+  });
+}
+
+function renderVersion(){
+  const d = V[selected];
+  const viewer = document.getElementById("viewer");
+  viewer.className = "viewer sw " + d.sw;
+  viewer.style.cssText = `--h:${d.h};--s:${d.s}%;--l:${d.l}%`;
+  document.getElementById("v-title").textContent = d.label;
+  document.getElementById("c-scope").textContent = d.label;
+  document.getElementById("v-req").textContent = d.req;
+  document.getElementById("v-by").innerHTML =
+    `Uploaded by <strong>${d.by}</strong> &middot; ${d.date} 2026, IST` +
+    (d.note === "approved" ? ' &middot; <span class="badge b-approved" style="margin-left:4px">Approved version</span>' : "");
+  document.getElementById("v-meta").innerHTML = `
+    <div><span>Dimensions</span><b>${d.dim}</b></div>
+    <div><span>File size</span><b>${d.size}</b></div>
+    <div><span>Content hash</span><b>${d.hash}</b></div>
+    <div><span>Parent</span><b>${d.parent}</b></div>
+    <div><span>Source</span><b>Manual upload</b></div>`;
+  const box = document.getElementById("comments");
+  box.innerHTML = d.comments.length
+    ? d.comments.map(c => `
+      <div class="comment">
+        <span class="avatar">${c[0]}</span>
+        <div class="cbody">
+          <div class="chead"><span class="cname">${c[1]}</span><span class="ctime">${c[2]} IST</span></div>
+          <div class="ctext">${c[3]}</div>
+        </div>
+      </div>`).join("")
+    : `<div class="ctext" style="color:var(--ink-3);padding:6px 0 12px">No comments on ${d.label} yet.</div>`;
+}
+
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", String(x === t)));
+    document.getElementById("screen-list").hidden = t.dataset.screen !== "list";
+    document.getElementById("screen-detail").hidden = t.dataset.screen !== "detail";
+    window.scrollTo(0, 0);
+  });
+});
+document.querySelectorAll(".pill").forEach(p => {
+  p.addEventListener("click", () => p.setAttribute("aria-pressed", p.getAttribute("aria-pressed") === "true" ? "false" : "true"));
+});
+document.querySelectorAll(".card").forEach((c, i) => {
+  c.addEventListener("click", () => { if (i === 1) document.querySelector('.tab[data-screen="detail"]').click(); });
+});
+document.querySelector('[data-goto="list"]').addEventListener("click", e => {
+  e.preventDefault();
+  document.querySelector('.tab[data-screen="list"]').click();
+});
+
+renderTree();
+renderVersion();
+</script>

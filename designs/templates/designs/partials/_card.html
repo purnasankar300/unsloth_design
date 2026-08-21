@@ -1,0 +1,33 @@
+{# One design, as a hangtag. Thumbnails only — never the full image. #}
+<a class="card" href="{{ card.design.get_absolute_url }}"
+   hx-get="{{ card.design.get_absolute_url }}"
+   hx-target="#drawer-body" hx-swap="innerHTML" hx-push-url="true">
+  <span class="card-punch"></span>
+
+  <div class="card-thumb">
+    {% if card.cover %}
+      <img src="{% url 'version-thumbnail' card.cover.pk %}" alt="{{ card.design.name }}" loading="lazy">
+      <span class="vbadge">{{ card.cover.display_label }}</span>
+    {% else %}
+      <span class="placeholder">NO IMAGE</span>
+    {% endif %}
+  </div>
+
+  <div class="card-body">
+    <div class="card-code">{{ card.design.code }}</div>
+    <div class="card-name">{{ card.design.name }}
+      {% if card.version_count > 1 %}<em>· {{ card.version_count|add:"-1" }} edit{{ card.version_count|add:"-1"|pluralize }}</em>{% endif %}
+    </div>
+
+    {% if card.chips %}
+      <div class="spec-chips">
+        {% for spec in card.chips %}<span class="spec">{{ spec.option.label }}</span>{% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="card-foot">
+      <span class="stamp st-{{ card.design.status.tone }}">{{ card.design.status.label }}</span>
+      <span class="card-meta">{{ card.comment_count }} comment{{ card.comment_count|pluralize }}</span>
+    </div>
+  </div>
+</a>
