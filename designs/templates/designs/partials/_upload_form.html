@@ -1,6 +1,6 @@
-{# Uploading is how a version is created, and choosing the parent is how the tree
+{% comment %} Uploading is how a version is created, and choosing the parent is how the tree
    branches. Branching back to the reference matters: externally edited images
-   degrade over successive rounds. #}
+   degrade over successive rounds. {% endcomment %}
 <form id="upload" class="upload" method="post" enctype="multipart/form-data"
       action="{% url 'version-create' design.code %}">
   {% csrf_token %}

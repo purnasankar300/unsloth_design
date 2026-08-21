@@ -1,6 +1,6 @@
-{# One chronological record for the design: who uploaded what, who said what,
+{% comment %} One chronological record for the design: who uploaded what, who said what,
    and every status move — self-approval included, never hidden. Status names
-   come from the row, never from here. #}
+   come from the row, never from here. {% endcomment %}
 <div class="thread" id="thread">
   {% for item in activity %}
     {% if item.kind == "upload" %}

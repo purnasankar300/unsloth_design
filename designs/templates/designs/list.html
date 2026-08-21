@@ -2,9 +2,9 @@
 {% block title %}Design board · Selvedge{% endblock %}
 
 {% block content %}
-{# Status names are never written here. The dropdown is whatever the Status
+{% comment %} Status names are never written here. The dropdown is whatever the Status
    table says, and the same for Category. One form, so the three controls
-   compose into one querystring. #}
+   compose into one querystring. {% endcomment %}
 <form class="rail" method="get" action="{% url 'design-list' %}">
   <div class="control control-search">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>

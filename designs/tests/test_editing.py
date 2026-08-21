@@ -18,6 +18,29 @@ MEMORY_STORAGE = {
 }
 
 
+class TemplateHygieneTests(TestCase):
+    def test_no_template_comment_spans_more_than_one_line(self):
+        """``{# #}`` is single-line only — a multi-line one renders as text.
+
+        Django never closes a ``{# #}`` across a newline, so the whole comment
+        leaks onto the page. Multi-line notes must use ``{% comment %}``.
+        """
+        import re
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parent.parent.parent
+        templates = list((root / "templates").rglob("*.html"))
+        templates += list((root / "designs" / "templates").rglob("*.html"))
+        self.assertTrue(templates)
+
+        for path in templates:
+            for match in re.finditer(r"\{#(.*?)#\}", path.read_text(), re.S):
+                self.assertNotIn(
+                    "\n", match.group(1),
+                    f"{path.name} has a multi-line {{# #}} comment; use {{% comment %}}",
+                )
+
+
 class LoginChromeTests(TestCase):
     def test_the_login_page_carries_no_application_chrome(self):
         """Signed out, there is nothing to search and nothing to open."""

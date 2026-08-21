@@ -14,7 +14,7 @@ Selvedge — an internal Django app for a 5–6 person garment design team in In
 docker compose up -d                              # postgres:16 + MinIO (stands in for R2)
 .venv/bin/python manage.py migrate                # also seeds statuses, spec fields, guidance cards
 .venv/bin/python manage.py runserver
-.venv/bin/python manage.py test designs           # 75 tests
+.venv/bin/python manage.py test designs           # 76 tests
 .venv/bin/python manage.py test designs.tests.test_domain.StatusTests.test_self_approval_is_permitted_but_flagged
 .venv/bin/python manage.py dump_to_r2             # weekly backup, needs pg_dump on PATH
 ```
@@ -66,6 +66,10 @@ still written against the version on screen; the feed only reads across all of t
 - **`Version.number` is 1-based; the UI is not.** The reference renders as `REF` and later
   versions as `v1`, `v2` via `Version.display_label`. The database, the admin and the audit
   trail keep `v{number}`. Use `display_label` in templates and `number` in URLs.
+- **`{# #}` is single-line only.** Django does not close a `{# #}` across a newline, so a
+  multi-line one renders as literal text on the page. Multi-line notes use
+  `{% comment %}`/`{% endcomment %}`. A test (`test_no_template_comment_spans_more_than_one_line`)
+  guards this — it caught every template in the repo once.
 - **Comments attach to a Version, not a Design.** The drawer shows them in one feed across
   every version, but the composer always posts against the version on screen.
 - **A season is called a "Drop" in the UI.** The model, the field name `season` and the first

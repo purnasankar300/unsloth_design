@@ -125,7 +125,7 @@ docker compose down -v                  # DESTROY the database and the bucket
 .venv/bin/python manage.py createsuperuser
 .venv/bin/python manage.py shell
 
-.venv/bin/python manage.py test designs                      # 75 tests
+.venv/bin/python manage.py test designs                      # 76 tests
 .venv/bin/python manage.py test designs.tests.test_specs     # one module
 .venv/bin/python manage.py test designs.tests.test_domain.StatusTests.test_self_approval_is_permitted_but_flagged
 

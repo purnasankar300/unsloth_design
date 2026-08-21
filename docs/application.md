@@ -214,7 +214,7 @@ via API — a ₹6,500–34,000/month decision that is guesswork without real da
 ## Tests
 
 ```bash
-.venv/bin/python manage.py test designs      # 75 tests
+.venv/bin/python manage.py test designs      # 76 tests
 ```
 
 - `test_domain.py` — creation and codes, the upload pipeline, the version tree,

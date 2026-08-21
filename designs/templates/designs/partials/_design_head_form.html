@@ -1,5 +1,5 @@
-{# Name, drop and category, edited in place. The code is not here on purpose:
-   it was issued once and is the design's identity. #}
+{% comment %} Name, drop and category, edited in place. The code is not here on purpose:
+   it was issued once and is the design's identity. {% endcomment %}
 <form class="headedit" method="post" action="{% url 'design-update' design.code %}"
       hx-post="{% url 'design-update' design.code %}" hx-target="#drawer-body" hx-swap="innerHTML">
   {% csrf_token %}
